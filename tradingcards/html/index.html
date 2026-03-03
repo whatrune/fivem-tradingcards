@@ -1,0 +1,94 @@
+<!DOCTYPE html><html lang="ja"><head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Trading Cards</title><link rel="stylesheet" href="style.css" /></head><body>
+<audio id="sound_r" src="sounds/r.mp3"></audio>
+<audio id="sound_sr" src="sounds/sr.mp3"></audio>
+<audio id="sound_ssr" src="sounds/ssr.mp3"></audio>
+<audio id="sound_ur" src="sounds/ur.mp3"></audio>
+<audio id="sound_open" src="sounds/open.mp3"></audio>
+<audio id="sound_page" src="sounds/page.mp3"></audio>
+
+<div id="overlay" class="hidden">
+  <canvas id="particles"></canvas>
+  <div class="book-container">
+    <div class="nav">
+      <button id="prev">◀</button><span id="pageIndicator">Page 1</span><button id="next">▶</button>
+      <span id="collectionInfo" class="collection"></span>
+      <button id="tradeBtn" class="btn">Trade</button>
+      <button id="closeBtn" class="btn subtle">Close</button>
+    </div>
+    <div id="rarityInfo" class="rarity-info"></div>
+    <div class="book"><div class="spread" id="spread">
+      <div class="page left" id="leftPage"></div><div class="page right" id="rightPage"></div>
+    </div></div>
+    <div class="hint" id="hint"></div>
+  </div>
+
+  <div id="packLayer" class="hidden packLayer">
+    <div class="packWrap">
+      <!-- body（袋本体） -->
+      <div class="packBody">
+        <img class="packBodyImg" src="images/cardpack_body.png" />
+        <div class="packMouthGlow"></div>
+        <div class="packLightBeams"></div>
+      </div>
+
+      <!-- head（上の帯）＝これをスライドして外す -->
+      <div id="packTop" class="packTop">
+        <img class="packHeadImg" src="images/cardpack_head.png" />
+      </div>
+
+      <div class="packHelp">上側を上へスライドして開封</div>
+    </div>
+  </div>
+
+<div class="packShine"></div></div>
+      <div id="packTop" class="packTop"><div class="packTopLabel">SLIDE</div></div>
+      <div class="packHelp">上側を上へスライドして開封</div>
+    </div>
+  </div>
+
+  <div id="rewardEffect" class="reward hidden"><div id="rewardCard" class="reward-card"></div></div>
+
+  <div id="tradePanel" class="trade hidden">
+    <div class="tradeBox"><div class="tradeHeader"><div id="tradeTitle">Trade</div>
+      <button id="tradeClose" class="btn subtle">Close</button></div>
+      <div id="tradeBody" class="tradeBody"></div>
+    </div>
+  </div>
+</div>
+
+<div id="adminOverlay" class="hidden">
+  <div class="tablet">
+    <div class="header"><h2>CARD ADMIN TABLET</h2><button id="adminClose">✕</button></div>
+    <div class="tabs">
+      <button class="tab active" data-tab="list">一覧</button>
+      <button class="tab" data-tab="add">追加/編集</button>
+      <button class="tab" data-tab="give">配布</button>
+    </div>
+    <div class="content">
+      <div id="adminList" class="tabContent active"><div id="cardList"></div></div>
+      <div id="adminAdd" class="tabContent">
+        <h3 id="formTitle">新規カード追加</h3>
+        <input id="card_id" placeholder="card_id (例: ur_001)">
+        <input id="label" placeholder="表示名">
+        <select id="rarity"><option>R</option><option>SR</option><option>SSR</option><option>UR</option></select>
+        <input id="weight" placeholder="weight" type="number">
+        <input id="page" placeholder="page" type="number" value="1">
+        <input id="slot" placeholder="slot" type="number" value="1">
+        <input id="image_url" placeholder="画像URL (https://...)">
+        <label class="checkRow"><input type="checkbox" id="is_limited"> 限定</label>
+        <label class="small">開始（任意）</label><input id="start_date" type="datetime-local">
+        <label class="small">終了（任意）</label><input id="end_date" type="datetime-local">
+        <div class="row"><button id="saveCardBtn" class="btn">保存</button><button id="resetFormBtn" class="btn subtle">リセット</button></div>
+      </div>
+      <div id="adminGive" class="tabContent">
+        <input id="targetId" placeholder="プレイヤーID">
+        <input id="amount" placeholder="枚数" type="number" value="1">
+        <button id="givePackBtn" class="btn">パック配布</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script></body></html>
