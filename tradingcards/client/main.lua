@@ -1,6 +1,6 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 
-local binderOpen, adminOpen = false, false
+local binderOpen, adminOpen, packOpen = false, false, false
 
 local function Nui(action, payload)
   payload = payload or {}
@@ -10,7 +10,8 @@ end
 
 local function ForceCloseUI()
   binderOpen = false
-  adminOpen = false
+  adminOpen  = false
+  packOpen   = false
   SetNuiFocus(false, false)
   SetNuiFocusKeepInput(false)
   Nui("forceClose")
@@ -46,22 +47,6 @@ RegisterNetEvent('QBCore:Client:OnPlayerUnload', function()
   ForceCloseUI()
 end)
 
--- Watchdog: during character select / not logged in, keep our NUI forcibly closed.
-CreateThread(function()
-  while true do
-    Wait(1000)
-    local loggedIn = LocalPlayer and LocalPlayer.state and LocalPlayer.state.isLoggedIn
-    if not loggedIn then
-      -- If any other UI is on top, do not steal focus; just ensure ours is not.
-      SetNuiFocus(false, false)
-      SetNuiFocusKeepInput(false)
-      Nui("forceClose")
-      binderOpen = false
-      adminOpen = false
-    end
-  end
-end)
-
 -- Admin open
 RegisterNetEvent("cards:client:openAdmin", function()
   adminOpen = true
@@ -88,7 +73,7 @@ end)
 
 -- Pack opening (cardpack)
 RegisterNetEvent("cards:client:openPack", function(card)
-  binderOpen = true
+  packOpen = true
   SetNuiFocus(true, true)
   Nui("openPack", {card = card})
   TriggerServerEvent("cards:server:getAlbum")
@@ -146,7 +131,7 @@ end)
 CreateThread(function()
   while true do
     Wait(0)
-    if (binderOpen or adminOpen) and IsControlJustPressed(0, 322) then
+    if (binderOpen or adminOpen or packOpen) and IsControlJustPressed(0, 322) then
       ForceCloseUI()
     end
   end
