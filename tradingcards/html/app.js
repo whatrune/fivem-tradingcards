@@ -10,7 +10,36 @@ function playSound(id,vol=0.6){const e=document.getElementById(id); if(!e) retur
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
 
 function openOverlay(){document.getElementById('overlay').classList.remove('hidden')}
-function closeOverlay(){document.getElementById('overlay').classList.add('hidden');hideTrade();}
+
+function resetPackUI(){
+  // pack UI
+  const layer = document.getElementById('packLayer');
+  const top   = document.getElementById('packTop');
+  if (layer) {
+    layer.classList.add('hidden');
+    layer.classList.remove('opening','r','sr','ssr','ur');
+  }
+  if (top) {
+    top.style.transition = '';
+    top.style.opacity    = '1';
+    top.style.transform  = 'translateY(0px)';
+  }
+  drag.active = false;
+  drag.opened = false;
+
+  // reward UI
+  const reward = document.getElementById('rewardEffect');
+  if (reward) {
+    reward.classList.add('hidden');
+    reward.style.background = 'rgba(0,0,0,.80)';
+  }
+}
+
+function closeOverlay(){
+  document.getElementById('overlay').classList.add('hidden');
+  hideTrade();
+  resetPackUI();
+}
 document.getElementById('closeBtn').onclick=()=>{postNui('close');closeOverlay();}
 document.getElementById('tradeClose').onclick=()=>hideTrade();
 
@@ -20,6 +49,7 @@ function hideReward(){document.getElementById('rewardEffect').classList.add('hid
 // pack peel
 let drag={active:false,startY:0,opened:false};
 function showPack(card){
+  resetPackUI();
   state.pendingCard=card;
   const layer=document.getElementById('packLayer');
   layer.classList.remove('opening');
@@ -162,7 +192,7 @@ document.getElementById('adminClose').onclick=()=>{postNui('close');closeAdmin()
 
 window.addEventListener('message',(ev)=>{
   const d=ev.data||{};
-  if(d.action==='forceClose'){closeOverlay();closeAdmin();return;}
+  if(d.action==='forceClose'){closeOverlay();closeAdmin();resetPackUI();return;}
   if(d.action==='openBinder'){openOverlay();return;}
   if(d.action==='openPack'){openOverlay();showPack(d.card);return;}
   if(d.action==='albumData'){state.allCards=d.allCards||[]; state.ownedMap={}; state.newMap={};
