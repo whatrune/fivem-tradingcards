@@ -156,7 +156,7 @@ ox_inventoryの場合、このディレクトリ構成が多いです。
 不要になった場合は３つのテーブルを削除してください。
 
 - `card_master` :カードの情報を保持
-- `card_rarity_weights` ：カードのレアリティによる抽出率を保持
+- `card_rarity_weights` :カードのレアリティによる抽出率を保持
 - `player_cards` :プレイヤーの保持カード情報
 
 ---
