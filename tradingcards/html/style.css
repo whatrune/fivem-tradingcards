@@ -1,79 +1,2739 @@
+/* v3.1 black-screen fix: overlay/adminOverlay default display:none */
+:root{--bg:#0a0a0f;--panel:#0f111a;--cyan:#00cfff;--muted:#9aa3b2;--purple:#9b59ff;--gold:#ffd54a}
+*{box-sizing:border-box} body{margin:0;background:transparent;font-family:system-ui,Segoe UI,Roboto,Arial;color:#fff;overflow:hidden}
+.hidden{display:none!important} .btn{padding:6px 10px;border:0;border-radius:8px;background:var(--cyan);cursor:pointer}
+.btn.subtle{background:transparent;border:1px solid rgba(255,255,255,.2);color:#fff}
 
-.hidden { display: none !important; }
+#overlay{position:fixed;inset:0;justify-content:center;align-items:center;display:none}
+#overlay:not(.hidden){display:flex}
+#adminOverlay{position:fixed;inset:0;background:rgba(0,0,0,.55);justify-content:center;align-items:center;z-index:200;display:none}
+#adminOverlay:not(.hidden){display:flex}
 
-.packLayer {
+#particles{position:fixed;inset:0;z-index:-1}
+.book-container{width:980px;text-align:center}
+.nav{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center;margin-bottom:10px}
+.collection{margin-left:12px;color:var(--cyan);font-size:14px;justify-self:start}
+.nav-actions{display:flex;gap:10px;justify-self:end}
+.rarity-filter{display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;justify-self:center}
+
+.scope-chip{min-width:86px;padding:7px 14px;border-radius:999px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.035);color:#d8e1ef;font-weight:700;letter-spacing:.02em;cursor:pointer;transition:transform .15s ease, border-color .15s ease, box-shadow .15s ease, background .15s ease, color .15s ease}
+.scope-chip:hover{transform:translateY(-1px);border-color:rgba(255,255,255,.30)}
+.scope-chip.active{background:rgba(0,207,255,.14);border-color:rgba(0,207,255,.58);box-shadow:0 0 0 1px rgba(0,207,255,.14) inset, 0 0 12px rgba(0,207,255,.14);color:#fff}
+.filter-divider{opacity:.5;font-weight:700;letter-spacing:.05em;padding:0 2px;user-select:none}
+.rarity-chip{min-width:54px;padding:7px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.05);color:#d8e1ef;font-weight:700;letter-spacing:.03em;cursor:pointer;transition:transform .15s ease, border-color .15s ease, box-shadow .15s ease, background .15s ease, color .15s ease}
+.rarity-chip:hover{transform:translateY(-1px);border-color:rgba(255,255,255,.32)}
+.rarity-chip.active{background:rgba(0,207,255,.16);border-color:rgba(0,207,255,.65);box-shadow:0 0 0 1px rgba(0,207,255,.18) inset, 0 0 14px rgba(0,207,255,.18);color:#fff}
+.rarity-chip.rarity-r.active{background:rgba(51,153,255,.16);border-color:rgba(51,153,255,.72);box-shadow:0 0 0 1px rgba(51,153,255,.18) inset, 0 0 14px rgba(51,153,255,.18)}
+.rarity-chip.rarity-sr.active{background:rgba(155,89,255,.16);border-color:rgba(155,89,255,.72);box-shadow:0 0 0 1px rgba(155,89,255,.18) inset, 0 0 14px rgba(155,89,255,.18)}
+.rarity-chip.rarity-ssr.active{background:rgba(255,213,74,.16);border-color:rgba(255,213,74,.78);box-shadow:0 0 0 1px rgba(255,213,74,.18) inset, 0 0 14px rgba(255,213,74,.18);color:#fff2b3}
+.rarity-chip.rarity-ur.active{border-color:rgba(255,92,92,.78);box-shadow:0 0 0 1px rgba(255,92,92,.18) inset, 0 0 14px rgba(255,92,92,.22);background:linear-gradient(180deg, rgba(255,86,86,.28), rgba(255,34,77,.18));color:#ffe8e8}
+
+.book{perspective:2000px} .spread{display:flex;width:100%;transform-style:preserve-3d;transition:transform .6s ease}
+.spread.flip-left{transform:rotateY(-180deg)} .spread.flip-right{transform:rotateY(180deg)}
+.page{width:50%;height:520px;background:rgba(20,30,60,.60);border:1px solid rgba(0,207,255,.35);backdrop-filter:blur(10px);
+padding:18px;display:grid;grid-template-columns:repeat(2,1fr);gap:14px;border-radius:18px;margin:0 6px}
+.card{position:relative;background:#0b0c12;border-radius:14px;overflow:hidden;text-align:center;border:2px solid rgba(0,207,255,.55);cursor:pointer}
+.card img{width:100%;height:150px;object-fit:cover;display:block} .card .label{padding:8px 6px;font-size:13px}
+.card.locked{filter:grayscale(100%) brightness(.45);opacity:.9}
+.newBadge{position:absolute;top:6px;right:6px;background:var(--purple);padding:3px 6px;font-size:10px;border-radius:6px}
+.card.r{border-color:#3399ff}
+.card.sr{border-color:var(--purple)}
+@keyframes ssrPulse{0%{box-shadow:0 0 6px var(--gold)}50%{box-shadow:0 0 20px var(--gold)}100%{box-shadow:0 0 6px var(--gold)}}
+.card.ssr{border-color:var(--gold);animation:ssrPulse 2s infinite}
+@keyframes urHue{0%{filter:hue-rotate(0deg)}100%{filter:hue-rotate(360deg)}}
+.card.ur{border:2px solid transparent;background:linear-gradient(#0b0c12,#0b0c12) padding-box,linear-gradient(45deg, red, orange, yellow, green, cyan, blue, violet) border-box;animation:urHue 3s linear infinite}
+
+.rarity-info{margin:6px 0 12px;color:var(--cyan);font-size:14px;font-weight:700;text-align:center;letter-spacing:.02em}
+
+.hint{min-height:18px;color:rgba(255,255,255,.7);font-size:12px;margin-top:10px}
+.reward{position:fixed;inset:0;display:flex;justify-content:center;align-items:center;background:rgba(0,0,0,.80);z-index:100}
+/* reward popup: show the card without cropping (NUI safe) */
+.reward-card{width:min(460px,92vw);max-height:86vh;height:auto;background:#0f111a;border-radius:18px;border:1px solid rgba(255,255,255,.15);display:flex;flex-direction:column;justify-content:flex-start;align-items:center;gap:10px;padding:18px 18px 14px;text-align:center;overflow:auto}
+.reward-card img{width:min(380px,86vw);max-height:62vh;height:auto;object-fit:contain;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+
+.packLayer{position:fixed;inset:0;display:flex;justify-content:center;align-items:center;background:rgba(0,0,0,.92);z-index:120}
+.packWrap{position:relative;width:320px;height:480px;isolation:isolate}
+/* Layering: glow (back) -> body -> top -> card launch (front) */
+.packBody{position:absolute;inset:0;z-index:2;background-image:url("images/cardpack_body.png");background-size:100% 100%;background-position:center;background-repeat:no-repeat;border-radius:18px;display:flex;justify-content:center;align-items:center;overflow:hidden}
+.packLabel{font-weight:800;letter-spacing:2px;opacity:.8}
+.packTop{position:absolute;left:0;top:0;z-index:3;width:100%;height:150px;background-image:url("images/cardpack_head.png");background-size:100% 100%;background-position:center;background-repeat:no-repeat;border-radius:18px 18px 0 0;cursor:grab;display:flex;justify-content:center;align-items:center;user-select:none}
+.packHelp{position:absolute;left:0;right:0;bottom:-34px;color:rgba(255,255,255,.75);font-size:12px}
+
+.trade{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.55);
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  z-index:150;
+}
+.tradeBox{
+  width:min(980px, calc(100vw - 48px));
+  max-height:min(640px, calc(100vh - 80px));
+  background:var(--panel);
+  border-radius:20px;
+  border:1px solid rgba(0,207,255,.35);
+  padding:18px;
+  display:flex;
+  flex-direction:column;
+  box-shadow:0 18px 60px rgba(0,0,0,.55);
+}
+.tradeHeader{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding-bottom:12px;
+  margin-bottom:12px;
+  border-bottom:1px solid rgba(255,255,255,.10);
+}
+#tradeTitle{
+  font-size:18px;
+  font-weight:800;
+  letter-spacing:.02em;
+}
+#tradeClose{
+  background:transparent;
+  border:1px solid rgba(255,255,255,.25);
+  color:#fff;
+  border-radius:10px;
+  height:34px;
+  padding:0 12px;
+  cursor:pointer;
+}
+.tradeBody{overflow:auto;padding-right:4px}
+.tradeTop{
+  padding:14px 14px 12px;
+  border:1px solid rgba(255,255,255,.10);
+  border-radius:14px;
+  background: linear-gradient(180deg, rgba(0,207,255,.08), rgba(255,255,255,.02));
+  margin-bottom:14px;
+}
+.tradeTopTitle{
+  font-size:18px;
+  font-weight:800;
+  letter-spacing:.02em;
+}
+.tradeTopSub{ margin-top:6px; opacity:.82; }
+.tradeTargetRow{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  margin-top:12px;
+}
+.tradeLabel{ min-width:84px; opacity:.9; }
+.tradeTargetInput{
+  flex:1;
+  height:38px;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,.14);
+  background:rgba(0,0,0,.28);
+  color:#fff;
+  padding:0 12px;
+}
+.tradeTargetInput:focus{ outline:none; border-color: rgba(0,207,255,.55); }
+.tradeTargetBtn{
+  height:38px;
+  border-radius:12px;
+  padding:0 14px;
+  font-weight:800;
+}
+.tradeBackRow{ margin-top:10px; }
+.tradeItem{
+  padding:12px;
+  border:1px solid rgba(255,255,255,.10);
+  border-radius:14px;
+  margin-bottom:12px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.015));
+}
+.tradeLeft{display:flex;gap:12px;align-items:center}
+.tradeThumbWrap{
+  width:56px;height:72px;
+  border-radius:12px;
+  overflow:hidden;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.04);
+  flex:0 0 auto;
+}
+.tradeThumb{width:100%;height:100%;object-fit:cover;display:block}
+.tradeThumb.ph{width:100%;height:100%;}
+.tradeInfo{display:flex;flex-direction:column;gap:6px}
+.tradeLine1{display:flex;gap:10px;align-items:baseline}
+.tradeId{opacity:.9}
+.tradeLine2{opacity:.75}
+.tradeSend{
+  height:36px;
+  border-radius:12px;
+  padding:0 14px;
+  font-weight:800;
+}
+.badge-rarity{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  height:22px;
+  padding:0 10px;
+  border-radius:999px;
+  background:rgba(0,207,255,.16);
+  border:1px solid rgba(0,207,255,.35);
+  font-size:12px;
+  font-weight:800;
+}
+
+.tablet{width:920px;height:620px;background:var(--panel);border-radius:20px;border:1px solid rgba(0,207,255,.35);display:flex;flex-direction:column;padding:18px}
+.header{display:flex;justify-content:space-between;align-items:center}
+#adminClose{background:transparent;border:1px solid rgba(255,255,255,.25);color:#fff;border-radius:10px;width:40px;height:34px;cursor:pointer}
+.tabs{margin-top:10px} .tab{background:transparent;border:0;color:#fff;margin-right:10px;cursor:pointer;padding:6px 8px}
+.tab.active{border-bottom:2px solid var(--cyan)} .content{margin-top:14px;flex:1;overflow:auto}
+.tabContent{display:none} .tabContent.active{display:block}
+input,select{width:100%;padding:9px 10px;border-radius:10px;background:#141826;border:1px solid rgba(0,207,255,.25);color:#fff;margin-bottom:10px}
+.row{display:flex;gap:10px} .checkRow{display:flex;align-items:center;gap:8px;color:rgba(255,255,255,.85);margin:6px 0 10px}
+#cardList .rowItem{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:10px;border-bottom:1px solid rgba(255,255,255,.08)}
+.pill{padding:2px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.18);font-size:12px} .pill.off{opacity:.5}
+
+
+/* Binder backdrop */
+#overlay{background: rgba(0,0,0,0.35);} 
+
+
+/* UI interaction safety */
+#adminOverlay, #overlay, .tablet, .tabs, .tab, button { pointer-events: auto; }
+.tab { cursor: pointer; }
+
+
+/* --- Pack image mode tweaks (generated) --- */
+.packLabel{display:none !important;}
+.packTopLabel{display:none !important;}
+.packShine{display:none !important;}
+
+
+/* --- Card pop animation (Pokepoke-ish) --- */
+#cardLaunchLayer{
+  position:absolute;
+  inset:0;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  pointer-events:none;
+  z-index:5; /* above pack */
+}
+#cardLaunch{
+  width:220px;
+  height:320px;
+  border-radius:18px;
+  overflow:hidden;
+  transform:translateY(60px) scale(.88);
+  opacity:0;
+  box-shadow:0 18px 55px rgba(0,0,0,.55);
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(20,20,20,.92);
+}
+#cardLaunch img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+}
+
+/* --- Card pop animation v2 (back->front flip + higher rise) --- */
+#cardLaunchLayer{pointer-events:none;}
+#cardLaunch{
+  position:relative;
+  transform-style:preserve-3d;
+  perspective:350px;
+}
+#cardLaunch .face{
+  position:absolute;
+  inset:0;
+  backface-visibility:hidden;
+}
+#cardLaunch .front{
+  transform:rotateY(180deg);
+}
+#cardLaunch .back{
+  transform:rotateY(0deg);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:radial-gradient(circle at 30% 20%, rgba(0,207,255,.35), rgba(15,17,26,.98) 55%, rgba(0,0,0,.95));
+}
+#cardLaunch .back .mark{
+  color:rgba(255,255,255,.92);
+  font-weight:900;
+  letter-spacing:2px;
+  text-align:center;
+  padding:18px 14px;
+  border:1px solid rgba(255,255,255,.16);
+  border-radius:14px;
+  background:rgba(0,0,0,.25);
+  text-shadow:0 10px 28px rgba(0,0,0,.55);
+}
+
+
+
+/* --- Robust rotate swap (v3): rotation + image swap without backface reliance --- */
+#cardLaunchLayer{
+  position:absolute;
+  inset:0;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  pointer-events:none;
+  z-index:6;
+}
+#cardLaunch{
+  width:220px;
+  height:320px;
+  border-radius:18px;
+  overflow:hidden;
+  box-shadow:0 18px 55px rgba(0,0,0,.55);
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(20,20,20,.92);
+  transform:translateY(70px) scale(.86) rotateY(0deg);
+  opacity:0;
+  position:relative;
+}
+#cardLaunch .imgBack,
+#cardLaunch .imgFront{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+}
+#cardLaunch .imgFront{ opacity:0; }
+#cardLaunch.play{
+  animation: tcCardUpFlipDown 2000ms cubic-bezier(.2,.9,.2,1) forwards;
+}
+/* rotate + travel */
+@keyframes tcCardUpFlipDown{
+  0%   { transform:translateY(-100px) scale(.80) rotateY(0deg); opacity:0; }
+  12%  { opacity:1; }
+  25%  { transform:translateY(-800px) scale(1.00) rotateY(0deg); opacity:1; }
+  42%  { transform:translateY(0px) scale(2.60) rotateY(0deg); opacity:1; }
+  47%  { transform:translateY(0px) scale(2.60) rotateY(90deg); opacity:1; }
+  52%  { transform:translateY(0px) scale(2.60) rotateY(180deg); opacity:1; }
+  57%  { transform:translateY(0px) scale(2.60) rotateY(270deg); opacity:1; }
+  62%  { transform:translateY(0px) scale(2.60) rotateY(360deg); opacity:1; }
+  67%  { transform:translateY(0px) scale(2.60) rotateY(90deg); opacity:1; }
+  72%  { transform:translateY(0px) scale(2.60) rotateY(180deg); opacity:1; }
+  77%  { transform:translateY(0px) scale(2.60) rotateY(270deg); opacity:1; }
+  100% { transform:translateY(0px) scale(2.60) rotateY(360deg); opacity:1; }
+}
+/* swap visibility at the flip moment (72%) */
+#cardLaunch.play .imgBack{ animation: tcBackVis 2000ms linear forwards; }
+#cardLaunch.play .imgFront{ animation: tcFrontVis 2000ms linear forwards; }
+
+@keyframes tcBackVis{
+  0%,71% { opacity:1; }
+  72%,100% { opacity:0; }
+}
+@keyframes tcFrontVis{
+  0%,71% { opacity:0; }
+  72%,100% { opacity:1; }
+}
+
+
+/* --- Tear glow effect (generated) --- */
+.tearGlow{
+  position:absolute;
+  z-index:1; /* behind pack body/top */
+  left:8px;
+  right:8px;
+  top:144px; /* near seam */
+  height:22px;
+  border-radius:14px;
+  opacity:0;
+  pointer-events:none;
+  background:
+    radial-gradient(closest-side at 50% 50%, rgba(255,255,255,.95), rgba(255,255,255,0) 70%),
+    linear-gradient(90deg, rgba(120,220,255,0), rgba(120,220,255,.85), rgba(120,220,255,0));
+  filter: blur(2px);
+  box-shadow:
+    0 0 18px rgba(120,220,255,.85),
+    0 0 42px rgba(120,220,255,.35);
+  mix-blend-mode: screen;
+  transition: opacity 120ms ease;
+}
+.packWrap.glowOn .tearGlow{
+  opacity:1;
+}
+
+
+/* --- Pokepoke seam glow v2 (generated) ---
+   Goal: thin seam line + few strong vertical beams (not fan), like the reference.
+*/
+.tearGlow{
+  height:10px !important;
+  border-radius:999px !important;
+  filter: blur(.6px) !important;
+  background: linear-gradient(90deg,
+      rgba(120,220,255,0) 0%,
+      rgba(120,220,255,.35) 20%,
+      rgba(255,255,255,1) 50%,
+      rgba(120,220,255,.35) 80%,
+      rgba(120,220,255,0) 100%);
+  box-shadow:
+    0 0 10px rgba(170,245,255,.65),
+    0 0 26px rgba(120,220,255,.22) !important;
+  mix-blend-mode: screen !important;
+  transform: translateZ(0);
+}
+
+/* beams */
+.tearGlow::before{
+  content:"";
+  position:absolute;
+  left:-40px;
+  right:-40px;
+  bottom:5px;
+  height:260px;
+  pointer-events:none;
+  opacity:0.95;
+  background:
+    /* 3–4 main beams */
+    linear-gradient(90deg,
+      rgba(255,255,255,0) 0%,
+      rgba(255,255,255,0) 18%,
+      rgba(190,255,255,.22) 22%,
+      rgba(255,255,255,.75) 26%,
+      rgba(190,255,255,.22) 30%,
+      rgba(255,255,255,0) 34%,
+
+      rgba(255,255,255,0) 42%,
+      rgba(190,255,255,.18) 46%,
+      rgba(255,255,255,.55) 50%,
+      rgba(190,255,255,.18) 54%,
+      rgba(255,255,255,0) 58%,
+
+      rgba(255,255,255,0) 64%,
+      rgba(190,255,255,.22) 68%,
+      rgba(255,255,255,.7) 72%,
+      rgba(190,255,255,.22) 76%,
+      rgba(255,255,255,0) 80%,
+      rgba(255,255,255,0) 100%),
+    radial-gradient(closest-side at 50% 100%,
+      rgba(255,255,255,.55),
+      rgba(255,255,255,0) 70%);
+  filter: blur(1.1px);
+  mix-blend-mode: screen;
+  -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,1), rgba(0,0,0,0));
+  mask-image: linear-gradient(to top, rgba(0,0,0,1), rgba(0,0,0,0));
+  animation: beamFlicker 850ms ease-in-out infinite;
+}
+
+.tearGlow::after{
+  content:"";
+  position:absolute;
+  left:-20px;
+  right:-20px;
+  bottom:0;
+  height:110px;
+  pointer-events:none;
+  opacity:0.45;
+  background:
+    radial-gradient(circle at 30% 60%, rgba(255,255,255,.9) 0 1px, rgba(255,255,255,0) 4px),
+    radial-gradient(circle at 52% 30%, rgba(255,255,255,.75) 0 1px, rgba(255,255,255,0) 4px),
+    radial-gradient(circle at 70% 55%, rgba(255,255,255,.85) 0 1px, rgba(255,255,255,0) 4px);
+  mix-blend-mode: screen;
+  -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,.8), rgba(0,0,0,0));
+  mask-image: linear-gradient(to top, rgba(0,0,0,.8), rgba(0,0,0,0));
+  animation: sparkleTwinkle 1200ms ease-in-out infinite;
+}
+
+@keyframes beamFlicker{
+  0%   { opacity:.75; transform: translateY(0); }
+  50%  { opacity:1;   transform: translateY(-3px); }
+  100% { opacity:.78; transform: translateY(0); }
+}
+@keyframes sparkleTwinkle{
+  0%,100% { opacity:0.30; }
+  50%     { opacity:0.60; }
+}
+
+
+/* --- Pokepoke seam glow v3: big pillars + shifted up --- */
+.tearGlow{ top: calc(142px - 100px) !important; } /* move up about 100px (adjust as needed) */
+
+.tearGlow::before{
+  height:320px !important;
+  left:-30px !important;
+  right:-30px !important;
+  filter: blur(1.4px) !important;
+  /* Fewer, thicker pillars */
+  background:
+    linear-gradient(90deg,
+      rgba(255,255,255,0) 0%,
+      rgba(255,255,255,0) 16%,
+
+      rgba(160,245,255,.20) 20%,
+      rgba(255,255,255,.78) 26%,
+      rgba(160,245,255,.20) 32%,
+      rgba(255,255,255,0) 38%,
+
+      rgba(255,255,255,0) 44%,
+      rgba(160,245,255,.18) 48%,
+      rgba(255,255,255,.62) 53%,
+      rgba(160,245,255,.18) 58%,
+      rgba(255,255,255,0) 64%,
+
+      rgba(255,255,255,0) 70%,
+      rgba(160,245,255,.20) 74%,
+      rgba(255,255,255,.76) 80%,
+      rgba(160,245,255,.20) 86%,
+      rgba(255,255,255,0) 92%,
+      rgba(255,255,255,0) 100%),
+    radial-gradient(closest-side at 50% 100%,
+      rgba(255,255,255,.68),
+      rgba(255,255,255,0) 72%);
+}
+
+/* Slightly stronger seam line */
+.tearGlow{
+  height:12px !important;
+  box-shadow:
+    0 0 14px rgba(190,255,255,.72),
+    0 0 38px rgba(120,220,255,.28) !important;
+}
+
+
+/* --- Pokepoke seam glow v4: single wide pillar, shorter, down 50px --- */
+.tearGlow{ top: calc(142px - 50px) !important; } /* moved down 50 from v3 */
+
+.tearGlow::before{
+  height:200px !important;      /* shorter */
+  left:-40px !important;
+  right:-40px !important;
+  filter: blur(1.3px) !important;
+  /* Single BIG pillar (about 5x width vs prior beams) */
+  background:
+    linear-gradient(90deg,
+      rgba(255,255,255,0) 0%,
+      rgba(255,255,255,0) 22%,
+
+      rgba(160,245,255,.18) 28%,
+      rgba(255,255,255,.78) 40%,
+      rgba(255,255,255,.92) 50%,
+      rgba(255,255,255,.78) 60%,
+      rgba(160,245,255,.18) 72%,
+
+      rgba(255,255,255,0) 78%,
+      rgba(255,255,255,0) 100%),
+    radial-gradient(closest-side at 50% 100%,
+      rgba(255,255,255,.55),
+      rgba(255,255,255,0) 78%);
+}
+
+/* seam a bit calmer to match single pillar */
+.tearGlow{
+  height:11px !important;
+  box-shadow:
+    0 0 12px rgba(190,255,255,.62),
+    0 0 30px rgba(120,220,255,.20) !important;
+}
+
+
+/* --- Pokepoke seam glow v5: pillar only + down 20px --- */
+.tearGlow{
+  top: calc(142px - 14px) !important; /* down 20 from v4 */
+  background: transparent !important; /* remove horizontal line */
+  box-shadow: none !important;
+  height:1px !important;
+  filter:none !important;
+}
+.tearGlow::after{ opacity:0 !important; } /* remove sparkles if any */
+
+
+/* --- Pack-only mode: hide binder/book UI behind pack --- */
+#overlay.mode-pack .book-container{ display:none !important; }
+#overlay.mode-pack #particles{ display:none !important; }
+
+
+/* --- Square card corners override (generated) --- */
+.card{ border-radius: 0 !important; }
+.card img{ border-radius: 0 !important; }
+.reward-card{ border-radius: 0 !important; }
+.reward-card img{ border-radius: 0 !important; object-fit: contain !important; }
+#cardLaunch, #cardLaunchInner{ border-radius: 0 !important; }
+#cardLaunch img, #cardLaunchInner img{ border-radius: 0 !important; }
+
+
+/* --- Rarity glow colors (generated) ---
+   Apply rarity class on #overlay: rarity-r / rarity-sr / rarity-ssr / rarity-ur
+*/
+#overlay{
+  --glowCore: rgba(255,255,255,.92);
+  --glowTint: rgba(120,220,255,.20);
+  --glowStrong: rgba(255,255,255,.80);
+}
+
+#overlay.rarity-r{
+  --glowCore: rgba(210,245,255,.85);
+  --glowTint: rgba(120,220,255,.18);
+  --glowStrong: rgba(200,245,255,.55);
+}
+#overlay.rarity-sr{
+  --glowCore: rgba(220,255,245,.95);
+  --glowTint: rgba(40,255,190,.22);
+  --glowStrong: rgba(80,255,210,.70);
+}
+#overlay.rarity-ssr{
+  --glowCore: rgba(255,255,255,1);
+  --glowTint: rgba(255,215,90,.28);
+  --glowStrong: rgba(255,240,170,.95);
+}
+#overlay.rarity-ur{
+  --glowCore: rgba(255,255,255,1);
+  --glowTint: rgba(255,60,60,.26);
+  --glowStrong: rgba(255,120,120,.95);
+}
+
+/* Pillar-only glow uses variables */
+.tearGlow::before{
+  background:
+    linear-gradient(90deg,
+      rgba(255,255,255,0) 0%,
+      rgba(255,255,255,0) 22%,
+
+      var(--glowTint) 28%,
+      var(--glowStrong) 40%,
+      var(--glowCore) 50%,
+      var(--glowStrong) 60%,
+      var(--glowTint) 72%,
+
+      rgba(255,255,255,0) 78%,
+      rgba(255,255,255,0) 100%),
+    radial-gradient(closest-side at 50% 100%,
+      var(--glowCore),
+      rgba(255,255,255,0) 78%) !important;
+}
+
+
+/* --- Pokepoke-like Finder layout (generated) --- */
+.book-container{
+  max-width: 980px;
+  margin: 0 auto;
+}
+.book{
+  background: rgba(10,12,18,.78);
+  border: 1px solid rgba(255,255,255,.10);
+  border-radius: 14px;
+  box-shadow: 0 24px 80px rgba(0,0,0,.45);
+  overflow: hidden;
+}
+.spread{
+  display:block !important;
+}
+.page.right{ display:none !important; }
+.page.left{
+  width:100% !important;
+  display:grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  padding: 16px;
+  align-content:start;
+}
+
+/* Card tiles */
+.card{
+  position:relative;
+  aspect-ratio: 3 / 4;
+  background: rgba(18,22,34,.85);
+  border: 1px solid rgba(255,255,255,.10);
+  overflow:hidden;
+  box-shadow: 0 10px 24px rgba(0,0,0,.35);
+}
+.card img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+}
+.card .label{
+  position:absolute;
+  left:0; right:0; bottom:0;
+  padding: 8px 10px;
+  font-size: 12px;
+  background: linear-gradient(to top, rgba(0,0,0,.82), rgba(0,0,0,0));
+}
+.card.locked{
+  filter: grayscale(1) brightness(.55);
+}
+.card.locked::after{
+  content:"?";
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:900;
+  font-size: 52px;
+  color: rgba(255,255,255,.25);
+}
+
+/* Make nav feel like app bar */
+.nav{
+  position:sticky;
+  top:0;
+  z-index:2;
+  background: rgba(6,8,12,.85);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+.nav button{
+  border-radius: 10px;
+}
+
+
+/* --- Finder tweaks (generated): bigger area, image-only, smaller images --- */
+.book-container{ max-width: 1200px !important; }
+.book{ min-height: 74vh !important; }
+
+.page.left{
+  padding: 22px !important;
+  gap: 18px !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+
+/* Hide labels entirely */
+.card .label{ display:none !important; }
+
+/* Make images slightly smaller inside tile by adding inner padding and background */
+.card{
+  padding: 10px !important;
+  background: rgba(10,12,18,.78) !important;
+}
+.card img{
+  border-radius: 0 !important;
+  width:100% !important;
+  height:100% !important;
+  object-fit: contain !important; /* show whole card, slightly smaller */
+  background: rgba(0,0,0,.25);
+}
+
+
+/* --- Finder polish v3 (generated): smaller images + cleaner Pokepoke-like background --- */
+
+/* Smaller images: increase inner padding */
+.card{ padding: 18px !important; background: rgba(255,255,255,.06) !important; border: 1px solid rgba(255,255,255,.10) !important; }
+.card img{ background: transparent !important; }
+
+/* Cleaner, stylish background panel */
+.book{
+  background:
+    radial-gradient(1200px 600px at 20% 10%, rgba(255,255,255,.08), rgba(255,255,255,0) 60%),
+    radial-gradient(900px 500px at 80% 20%, rgba(120,220,255,.10), rgba(120,220,255,0) 55%),
+    linear-gradient(180deg, rgba(8,10,16,.92), rgba(6,8,12,.92)) !important;
+  border: 1px solid rgba(255,255,255,.10) !important;
+  box-shadow: 0 24px 90px rgba(0,0,0,.55) !important;
+}
+
+/* Reduce visual noise */
+.page.left{
+  background: transparent !important;
+}
+
+/* Subtle grid feel */
+.page.left{
+  gap: 20px !important;
+}
+
+/* Nav bar polish */
+.nav{
+  background: rgba(8,10,16,.72) !important;
+  border-bottom: 1px solid rgba(255,255,255,.08) !important;
+}
+.nav button{
+  background: rgba(255,255,255,.06) !important;
+  border: 1px solid rgba(255,255,255,.10) !important;
+}
+
+
+/* --- Finder rework v4: true "card finder" panel (Pokepoke-ish) --- */
+
+/* Dim & blur game behind */
+#overlay{
+  background: rgba(0,0,0,.78) !important;
+  backdrop-filter: blur(10px);
+}
+
+/* Centered modal panel */
+.book-container{
+  max-width: 1280px !important;
+  width: calc(100% - 40px) !important;
+  margin: 24px auto !important;
+}
+.book{
+  background:
+    radial-gradient(900px 420px at 18% 10%, rgba(255,255,255,.08), rgba(255,255,255,0) 62%),
+    radial-gradient(900px 420px at 80% 10%, rgba(120,220,255,.08), rgba(120,220,255,0) 62%),
+    linear-gradient(180deg, rgba(10,12,18,.94), rgba(8,10,14,.94)) !important;
+  border: 1px solid rgba(255,255,255,.10) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 30px 120px rgba(0,0,0,.65) !important;
+  overflow: hidden !important;
+}
+
+/* Remove any "page frame" look */
+.spread{ padding: 0 !important; margin:0 !important; }
+.page.left{
+  width:100% !important;
+  padding: 18px 18px 22px !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  display:grid !important;
+  grid-template-columns: repeat(3, 1fr) !important;
+  gap: 16px !important;
+  align-content:start !important;
+}
+.page.right{ display:none !important; }
+
+/* Card tiles: uniform, no weird frames */
+.card{
+  padding: 16px !important;            /* make image smaller */
+  background: rgba(255,255,255,.05) !important;
+  border: 1px solid rgba(255,255,255,.08) !important;
+  box-shadow: 0 10px 26px rgba(0,0,0,.40) !important;
+  overflow:hidden !important;
+  aspect-ratio: 2.5 / 3.5 !important;  /* portrait card ratio */
+}
+.card:hover{
+  border-color: rgba(120,220,255,.22) !important;
+}
+
+/* Image only (no label) */
+.card .label{ display:none !important; }
+.card img{
+  width:100% !important;
+  height:100% !important;
+  object-fit: contain !important;
+  background: transparent !important;
+}
+
+/* Locked cards: simple blurred silhouette */
+.card.locked{
+  filter: grayscale(1) brightness(.45) !important;
+}
+.card.locked::after{
+  content:"?";
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:900;
+  font-size: 54px;
+  color: rgba(255,255,255,.18);
+}
+
+/* Top bar: cleaner */
+.nav{
+  background: rgba(8,10,16,.88) !important;
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255,255,255,.08) !important;
+  padding: 10px 12px !important;
+}
+.nav .title, .nav span, .nav div{
+  letter-spacing:.2px;
+}
+.nav button{
+  background: rgba(255,255,255,.06) !important;
+  border: 1px solid rgba(255,255,255,.10) !important;
+}
+.nav button:hover{
+  border-color: rgba(120,220,255,.22) !important;
+}
+
+/* Remove the yellow/green guide lines if any */
+*{ outline-color: transparent; }
+
+
+/* --- Finder v5: images ~half size --- */
+.card{
+  padding: 36px !important; /* was 16px -> much smaller image */
+}
+.card img{
+  max-width: 100% !important;
+  max-height: 100% !important;
+}
+
+
+/* --- Finder v6: force image scale down (centered) --- */
+.page.left .card{
+  padding: 0 !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+}
+.page.left .card img{
+  width: 55% !important;
+  height: 55% !important;
+  object-fit: contain !important;
+}
+
+
+/* --- Finder v7: reduce cell size (less whitespace) while keeping image small --- */
+.page.left{
+  grid-template-columns: repeat(3, 260px) !important;
+  justify-content: center !important;
+  gap: 14px !important;
+}
+
+/* Fix tile size so it doesn't stretch with screen */
+.page.left .card{
+  width: 260px !important;
+  aspect-ratio: 2.5 / 3.5 !important;
+  padding: 0 !important;
+}
+
+/* Keep image small via scale, not by huge padding */
+.page.left .card img{
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+  transform: scale(0.55) translateZ(0) !important;
+  transform-origin: center !important;
+}
+
+
+/* --- Finder v8: actually fill space (bigger cards, tighter grid) --- */
+.book-container{
+  margin: 16px auto !important;
+}
+.page.left{
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  max-width: 1040px !important;
+  margin: 0 auto !important;
+  gap: 12px !important;
+  padding: 14px !important;
+}
+
+/* Make the tile itself smaller (less empty), and the card bigger inside it */
+.page.left .card{
+  width: auto !important;
+  aspect-ratio: 2.5 / 3.5 !important;
+  padding: 8px !important;
+  background: rgba(255,255,255,.04) !important;
+  border: 1px solid rgba(255,255,255,.08) !important;
+}
+
+/* Remove the 0.55 scale that was making everything tiny */
+.page.left .card img{
+  transform: none !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+}
+
+
+/* --- Finder v9: no-overlap hard override --- */
+.page.left{
+  display:grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  grid-auto-rows: 1fr !important;
+  align-items: stretch !important;
+}
+.page.left .card{
+  box-sizing: border-box !important;
+  position: relative !important;
+  margin: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+  aspect-ratio: 2.5 / 3.5 !important;
+  padding: 10px !important;
+}
+.page.left .card img{
+  box-sizing: border-box !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: contain !important;
+  position: relative !important;
+}
+
+
+/* --- Finder v10: 5x3 grid --- */
+.page.left{
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  max-width: 1320px !important;
+  margin: 0 auto !important;
+  gap: 10px !important;
+  padding: 12px !important;
+}
+
+/* Coming soon placeholder */
+.page.left .card.comingsoon{
+  background: rgba(255,255,255,.03) !important;
+  border: 1px dashed rgba(255,255,255,.14) !important;
+}
+.page.left .card.comingsoon::after{
+  content:"COMING\A SOON";
+  white-space: pre;
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  font-weight:900;
+  letter-spacing:1px;
+  font-size: 18px;
+  color: rgba(255,255,255,.22);
+}
+
+
+/* --- Finder v11: fill vertical space (3 rows stretch) --- */
+.page.left{
+  height: calc(100vh - 170px) !important; /* nav + margins */
+  grid-template-rows: repeat(3, 1fr) !important;
+  align-content: stretch !important;
+}
+
+/* Cards fill their grid cell; remove fixed aspect forcing short tiles */
+.page.left .card{
+  aspect-ratio: auto !important;
+  height: 100% !important;
+  padding: 10px !important;
+}
+.page.left .card img{
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+}
+
+
+/* --- Card hover lift (generated) --- */
+.page.left .card{
+  transition: transform 140ms ease, box-shadow 140ms ease, border-color 140ms ease;
+}
+.page.left .card:not(.comingsoon):hover{
+  transform: translateY(-6px);
+  box-shadow: 0 18px 42px rgba(0,0,0,.55) !important;
+  border-color: rgba(120,220,255,.22) !important;
+}
+
+/* --- Card preview modal (generated) --- */
+.cardPreview{
   position: fixed;
   inset: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: rgba(0,0,0,.92);
-  z-index: 120;
+  z-index: 50;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.cardPreview.hidden{ display:none; }
+.cardPreviewBackdrop{
+  position:absolute;
+  inset:0;
+  background: rgba(0,0,0,.72);
+  backdrop-filter: blur(10px);
+}
+.cardPreviewPanel{
+  position:relative;
+  z-index:1;
+  width: min(520px, 78vw);
+  aspect-ratio: 2.5 / 3.5;
+  background: rgba(12,14,20,.92);
+  border: 1px solid rgba(255,255,255,.12);
+  box-shadow: 0 30px 120px rgba(0,0,0,.75);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+}
+#cardPreviewImg{
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transform: translateZ(0);
 }
 
-#packBody {
-  width: 240px;
-  height: 320px;
-  background: #222;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+
+/* --- Preview v2: image-only (no panel background) --- */
+.cardPreviewPanel{
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  width: auto !important;
+  aspect-ratio: auto !important;
+  overflow: visible !important;
+}
+#cardPreviewImg{
+  width: auto !important;
+  height: auto !important;
+  max-width: 82vw !important;
+  max-height: 86vh !important;
+  object-fit: contain !important;
 }
 
-#packTop {
+
+/* --- Preview v3: hover-only arrows --- */
+.cardPreviewPanel{
+  position: relative !important;
+}
+.cardPreviewPanel .navZone{
   position: absolute;
   top: 0;
-  width: 240px;
-  height: 80px;
-  background: crimson;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-}
-
-#cardLaunchLayer {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  pointer-events: none;
-  z-index: 130;
-}
-
-#launchCard {
-  width: 260px;
-  transform: translateY(300px) scale(.8);
+  bottom: 0;
+  width: 22%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor: pointer;
   opacity: 0;
-  will-change: transform, opacity;
+  transition: opacity 120ms ease;
+  z-index: 2;
+}
+.cardPreviewPanel .navZone.left{ left: 0; }
+.cardPreviewPanel .navZone.right{ right: 0; }
+.cardPreviewPanel .navZone:hover{ opacity: 1; }
+
+.cardPreviewPanel .navArrow{
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight: 900;
+  font-size: 20px;
+  color: rgba(255,255,255,.9);
+  background: rgba(0,0,0,.35);
+  border: 1px solid rgba(255,255,255,.14);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 12px 30px rgba(0,0,0,.35);
+}
+.cardPreviewPanel .navZone:hover .navArrow{
+  background: rgba(0,0,0,.50);
+  border-color: rgba(120,220,255,.20);
 }
 
-.launch-up {
-  animation: launchUp .35s ease-out forwards;
+
+/* --- Preview v4: arrows outside card --- */
+.cardPreviewPanel{
+  overflow: visible !important; /* allow arrows outside */
+}
+.cardPreviewPanel .navZone{
+  width: 64px !important;
+  opacity: 0;
+}
+.cardPreviewPanel .navZone.left{
+  left: -76px !important;
+}
+.cardPreviewPanel .navZone.right{
+  right: -76px !important;
+}
+.cardPreviewPanel:hover .navZone{
+  opacity: 1; /* show when hovering panel area */
 }
 
-.fall-down {
-  animation: fallDown .45s ease-in forwards;
+
+/* --- Preview v5: arrows without circular button --- */
+.cardPreviewPanel .navArrow{
+  width: auto !important;
+  height: auto !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  font-size: 28px !important;
+  color: rgba(255,255,255,.88) !important;
+  text-shadow: 0 10px 28px rgba(0,0,0,.55);
+}
+.cardPreviewPanel .navZone:hover .navArrow{
+  color: rgba(255,255,255,1) !important;
+  text-shadow: 0 14px 34px rgba(0,0,0,.65);
 }
 
-@keyframes launchUp {
-  0%   { transform: translateY(300px) scale(.8); opacity:0; }
-  100% { transform: translateY(-200px) scale(1.1); opacity:1; }
+
+/* --- Locked cards: harder to see (generated) --- */
+.page.left .card.locked{
+  filter: grayscale(1) brightness(.40) contrast(1.05) blur(0.4px) !important;
+  opacity: .70 !important;
+}
+.page.left .card.locked img{
+  filter: blur(0.8px) brightness(.50) !important;
+  opacity: .60 !important;
+}
+.page.left .card.locked::after{
+  content:"LOCKED";
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:12px;
+  text-align:center;
+  font-weight:900;
+  letter-spacing:3px;
+  font-size: 13px;
+  color: rgba(255,255,255,.58);
+  text-shadow:
+    0 2px 6px rgba(0,0,0,.85),
+    0 12px 26px rgba(0,0,0,.55);
+  pointer-events:none;
 }
 
-@keyframes fallDown {
-  0%   { transform: translateY(-200px) scale(1.1); }
-  100% { transform: translateY(0px) scale(1); }
+
+/* --- Finder header tweak: move page nav below grid (generated) --- */
+.pageNav{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap: 10px;
+  padding: 10px 0 6px;
+  margin-top: 6px;
+  color: rgba(255,255,255,.85);
+}
+.pageNav #pageIndicator{
+  min-width: 90px;
+  text-align:center;
+  font-weight:700;
+  opacity:.9;
+}
+.pageNav #prev,
+.pageNav #next{
+  color: #fff;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.10);
+  border-radius: 10px;
+  padding: 6px 10px;
+  line-height: 1;
+}
+.pageNav #prev:hover,
+.pageNav #next:hover{
+  border-color: rgba(120,220,255,.22);
 }
 
-#reward {
+
+/* --- Page nav: slide transition (generated) --- */
+.book{ perspective: none !important; }
+.spread{ transform-style: flat !important; transition: none !important; }
+.spread.flip-left, .spread.flip-right{ transform: none !important; }
+
+@keyframes slideNext{
+  0%   { transform: translateX(0); opacity: 1; }
+  49%  { transform: translateX(-70px); opacity: 0; }
+  50%  { transform: translateX(70px); opacity: 0; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+@keyframes slidePrev{
+  0%   { transform: translateX(0); opacity: 1; }
+  49%  { transform: translateX(70px); opacity: 0; }
+  50%  { transform: translateX(-70px); opacity: 0; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+.spread.slide-next{ animation: slideNext 520ms ease both; }
+.spread.slide-prev{ animation: slidePrev 520ms ease both; }
+
+
+/* --- Page nav: jump 10 buttons (generated) --- */
+.pageNav .jump{
+  padding: 6px 12px;
+  font-weight: 800;
+  letter-spacing: .5px;
+}
+
+
+/* --- Jump10 buttons match single-step buttons (generated) --- */
+.pageNav #prev10,
+.pageNav #next10{
+  color: #fff;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.10);
+  border-radius: 10px;
+  padding: 6px 10px;
+  line-height: 1;
+  font-weight: inherit;
+  letter-spacing: 0;
+}
+.pageNav #prev10:hover,
+.pageNav #next10:hover{
+  border-color: rgba(120,220,255,.22);
+}
+
+
+/* --- Count badge (generated) --- */
+.page.left .card .badge-count{
+  position:absolute;
+  top:8px;
+  right:8px;
+  font-weight:900;
+  font-size: 12px;
+  letter-spacing: .3px;
+  color: rgba(255,255,255,.95);
+  background: rgba(0,0,0,.45);
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 10px;
+  padding: 4px 7px;
+  box-shadow: 0 10px 26px rgba(0,0,0,.35);
+  pointer-events:none;
+}
+
+
+/* --- NEW badge (is_new) --- */
+.page.left .card .badge-new{
+  position:absolute;
+  top:8px;
+  left:8px;
+  font-weight:900;
+  font-size: 10.5px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+
+  /* softer, more "pokepoke" vibe */
+  color: rgba(255,255,255,.92);
+  background: linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,.08));
+  border: 1px solid rgba(255,255,255,.22);
+  border-left: 3px solid rgba(210,182,120,.90);
+  border-radius: 12px;
+  padding: 4px 8px;
+
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+
+  box-shadow: 0 10px 26px rgba(0,0,0,.32);
+  text-shadow: 0 8px 18px rgba(0,0,0,.42);
+  pointer-events:none;
+}
+
+/* subtle highlight around NEW cards */
+.page.left .card.is-new{
+  outline: 1px solid rgba(210,182,120,.20);
+  box-shadow: 0 18px 40px rgba(0,0,0,.22);
+}
+
+
+/* --- NEW ribbon (override, generated) --- */
+.page.left .card{ position: relative; } /* ensure positioning */
+.page.left .card .badge-new{
+  position: absolute !important;
+  left: -75px !important;
+  top: 15px !important;
+  transform: rotate(-40deg) !important;
+  transform-origin: center !important;
+
+  width: 220px !important;
+  text-align: center !important;
+  padding-left: 14px !important;
+
+  font-weight: 900 !important;
+  font-size: 11px !important;
+  letter-spacing: 1.2px !important;
+  text-transform: uppercase !important;
+
+  color: rgba(255,255,255,.92) !important;
+  background: linear-gradient(135deg, rgba(246,238,210,.92), rgba(210,182,120,.35)) !important;
+  border: 1px solid rgba(255,255,255,.22) !important;
+  box-shadow: inset 0 -1px 0 rgba(255,255,255,.35), 0 18px 40px rgba(0,0,0,.35) !important;
+
+  padding: 4px 0 !important;
+  border-radius: 10px !important;
+
+  
+  text-shadow: 0 10px 22px rgba(0,0,0,.18) !important;
+  backdrop-filter: blur(6px) !important;
+  -webkit-backdrop-filter: blur(6px) !important;
+
+  pointer-events: none !important;
+}
+
+/* little cut at ends */
+.page.left .card .badge-new::before,
+.page.left .card .badge-new::after{
+  content: '' !important;
+  position: absolute !important;
+  top: 50% !important;
+  width: 10px !important;
+  height: 10px !important;
+  background: rgba(0,0,0,.18) !important;
+  transform: translateY(-50%) rotate(45deg) !important;
+  border-radius: 2px !important;
+  filter: blur(.2px) !important;
+  opacity: .55 !important;
+}
+..page.left .card .badge-new::before{ left: -5px !important; }
+.page.left .card .badge-new::after{ right: -5px !important; }
+
+
+/* --- NEW ribbon depth (override, generated) --- */
+.page.left .card .badge-new{
+  /* add a little depth: darker at bottom, highlight at top */
+  background: linear-gradient(135deg,
+    rgba(252,246,230,.92) 0%,
+    rgba(230,210,160,.55) 45%,
+    rgba(170,140,80,.22) 100%) !important;
+
+  /* keep bottom line + add soft outer shadow */
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.42),
+    inset 0 -1px 0 rgba(255,255,255,.35),
+    inset 0 -10px 18px rgba(0,0,0,.14),
+    0 18px 40px rgba(0,0,0,.34) !important;
+}
+
+.page.left .card .badge-new::before{
+  content:'' !important;
+  position:absolute !important;
+  left:10px !important;
+  right:10px !important;
+  top:2px !important;
+  height:9px !important;
+  border-radius: 999px !important;
+  background: linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,0)) !important;
+  opacity:.85 !important;
+  pointer-events:none !important;
+}
+
+.page.left .card .badge-new::after{
+  /* subtle rim on lower edge for "tape" feel */
+  content:'' !important;
+  position:absolute !important;
+  left:0 !important;
+  right:0 !important;
+  bottom:0 !important;
+  height:1px !important;
+  background: rgba(255,255,255,.22) !important;
+  opacity:.9 !important;
+  pointer-events:none !important;
+}
+
+
+/* --- Trade UI polish (ID direct) --- */
+#tradePanel{
+  backdrop-filter: blur(6px);
+}
+.tradeTop{
+  padding:12px 12px 10px;
+  border:1px solid rgba(255,255,255,.10);
+  border-radius:14px;
+  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+  margin-bottom:12px;
+}
+.tradeTopTitle{
+  font-size:18px;
+  font-weight:800;
+  letter-spacing:.02em;
+}
+.tradeTopSub{ margin-top:4px; opacity:.85; }
+.tradeTargetRow{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  flex-wrap:wrap;
+  margin-top:10px;
+}
+.tradeLabel{ min-width:140px; opacity:.9; }
+.tradeTargetInput{ width:160px; }
+.btn.ghost{
+  background:transparent;
+  border:1px solid rgba(255,255,255,.25);
+}
+.tradeBackRow{ margin-top:10px; }
+.tradeItem{
+  background: rgba(0,0,0,.18);
+  transition: transform .12s ease, border-color .12s ease, background .12s ease;
+}
+.tradeItem:hover{
+  transform: translateY(-1px);
+  border-color: rgba(0,207,255,.35);
+  background: rgba(0,0,0,.24);
+}
+.tradeLeft{
+  display:flex;
+  gap:12px;
+  align-items:center;
+  min-width:0;
+}
+.tradeThumbWrap{
+  width:56px;
+  height:78px;
+  border-radius:10px;
+  overflow:hidden;
+  border:1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.04);
+  flex:0 0 auto;
+}
+.tradeThumb{
+  width:100%;
+  height:100%;
+  object-fit: cover;
+  display:block;
+}
+.tradeThumb.ph{
+  width:100%;
+  height:100%;
+  background: rgba(255,255,255,.06);
+}
+.tradeInfo{ min-width:0; }
+.tradeLine1{
+  display:flex;
+  gap:8px;
+  align-items:center;
+  min-width:0;
+}
+.tradeId{
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  opacity:.95;
+}
+.tradeLine2{ opacity:.8; margin-top:4px; }
+.badge-rarity{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:2px 8px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.22);
+  background: rgba(255,255,255,.06);
+  font-weight:800;
+  letter-spacing:.04em;
+  font-size:12px;
+}
+.btn.tradeSend{ min-width:90px; }
+
+
+/* --- Tradingcards Toast (NUI-safe) --- */
+.tc-toast{
   position: fixed;
-  inset: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: rgba(0,0,0,.85);
-  z-index: 140;
+  left: 50%;
+  top: 24px;
+  transform: translateX(-50%);
+  z-index: 99999;
+  min-width: 280px;
+  max-width: min(560px, calc(100vw - 40px));
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(10, 12, 18, 0.92);
+  border: 1px solid rgba(255,255,255,0.14);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.45);
+  color: #fff;
+  font-size: 14px;
+  line-height: 1.35;
+  letter-spacing: 0.2px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 140ms ease, transform 140ms ease;
+}
+.tc-toast.show{
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+.tc-toast.success{ border-color: rgba(80, 220, 140, 0.35); }
+.tc-toast.error{ border-color: rgba(255, 90, 90, 0.45); }
+
+
+.trade{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.55);
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  z-index:150;
+}
+
+/* ===== Trade (A): compact glass + glow ===== */
+.tradeBox{
+  width: min(720px, calc(100vw - 48px));
+  max-height: min(540px, calc(100vh - 120px));
+  background:
+    radial-gradient(1200px 500px at 20% 0%, rgba(0,207,255,.14), transparent 55%),
+    radial-gradient(900px 500px at 85% 110%, rgba(180,120,255,.10), transparent 60%),
+    linear-gradient(180deg, rgba(16,18,28,.92), rgba(10,12,18,.92));
+  border-radius: 18px;
+  border: 1px solid rgba(0,207,255,.28);
+  box-shadow:
+    0 18px 60px rgba(0,0,0,.62),
+    inset 0 1px 0 rgba(255,255,255,.10);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: 14px 14px 16px;
+  display:flex;
+  flex-direction:column;
+}
+
+.tradeHeader{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding: 4px 2px 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid rgba(255,255,255,.10);
+}
+
+#tradeTitle{
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: .04em;
+  text-shadow: 0 0 18px rgba(0,207,255,.18);
+}
+
+#tradeClose{
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.18);
+  color: #fff;
+  border-radius: 12px;
+  height: 34px;
+  padding: 0 12px;
+  cursor:pointer;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.10);
+}
+#tradeClose:hover{
+  border-color: rgba(0,207,255,.35);
+  box-shadow: 0 0 0 3px rgba(0,207,255,.10), inset 0 1px 0 rgba(255,255,255,.10);
+}
+
+.tradeBody{overflow:auto;padding-right:4px}
+
+.tradeTop{
+  padding: 14px 14px 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
+  margin-bottom: 14px;
+}
+
+.tradeTopTitle{
+  font-size:18px;
+  font-weight:800;
+  letter-spacing:.02em;
+}
+.tradeTopSub{ margin-top:6px; opacity:.82; }
+
+.tradeTargetRow{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  margin-top:12px;
+}
+.tradeLabel{ min-width:84px; opacity:.9; }
+
+.tradeTargetInput{
+  flex:1;
+  height: 40px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.16);
+  background: rgba(0,0,0,.24);
+  color:#fff;
+  padding:0 12px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+}
+.tradeTargetInput:focus{
+  outline:none;
+  border-color: rgba(0,207,255,.55);
+  box-shadow: 0 0 0 3px rgba(0,207,255,.12), inset 0 1px 0 rgba(255,255,255,.06);
+}
+
+.tradeTargetBtn{
+  height: 40px;
+  border-radius: 14px;
+  padding:0 14px;
+  font-weight: 900;
+  letter-spacing: .02em;
+  box-shadow:
+    0 10px 22px rgba(0,207,255,.18),
+    inset 0 1px 0 rgba(255,255,255,.18);
+}
+.tradeTargetBtn:hover{
+  filter: brightness(1.05);
+  box-shadow:
+    0 12px 26px rgba(0,207,255,.22),
+    0 0 0 3px rgba(0,207,255,.10),
+    inset 0 1px 0 rgba(255,255,255,.18);
+}
+
+.tradeBackRow{ margin-top:10px; }
+
+.tradeItem{
+  padding:12px;
+  border-radius: 16px;
+  margin-bottom:12px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  background:
+    radial-gradient(600px 160px at 0% 0%, rgba(0,207,255,.10), transparent 60%),
+    linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.015));
+  border: 1px solid rgba(255,255,255,.10);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+}
+
+.tradeLeft{display:flex;gap:12px;align-items:center}
+.tradeThumbWrap{
+  width:56px;height:72px;
+  border-radius:12px;
+  overflow:hidden;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.04);
+  flex:0 0 auto;
+}
+.tradeThumb{width:100%;height:100%;object-fit:cover;display:block}
+.tradeThumb.ph{width:100%;height:100%;}
+.tradeInfo{display:flex;flex-direction:column;gap:6px}
+.tradeLine1{display:flex;gap:10px;align-items:baseline}
+.tradeId{opacity:.9}
+.tradeLine2{opacity:.75}
+
+.tradeSend{
+  height: 40px;
+  border-radius: 14px;
+  padding:0 14px;
+  font-weight: 900;
+  letter-spacing: .02em;
+  box-shadow:
+    0 10px 22px rgba(0,207,255,.18),
+    inset 0 1px 0 rgba(255,255,255,.18);
+}
+.tradeSend:hover{
+  filter: brightness(1.05);
+  box-shadow:
+    0 12px 26px rgba(0,207,255,.22),
+    0 0 0 3px rgba(0,207,255,.10),
+    inset 0 1px 0 rgba(255,255,255,.18);
+}
+
+.badge-rarity{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  height:22px;
+  padding:0 10px;
+  border-radius:999px;
+  background: rgba(0,207,255,.14);
+  border: 1px solid rgba(0,207,255,.32);
+  box-shadow: 0 0 14px rgba(0,207,255,.12);
+  font-size:12px;
+  font-weight:800;
+}
+
+
+/* --- Trade: center align fix --- */
+.tradeTargetRow{ align-items:center; }
+.tradeLabel{
+  display:flex;
+  align-items:center;
+  height:40px;            /* match input/button */
+  line-height:40px;
+  margin:0;
+}
+.tradeTargetInput{ height:40px; }
+.tradeTargetBtn{ height:40px; display:flex; align-items:center; justify-content:center; }
+
+/* --- Trade: target row grid --- */
+.tradeTargetRow{
+  display:grid;
+  grid-template-columns: 90px 1fr auto;
+  gap:10px;
+  align-items:center;
+}
+.tradeLabel{
+  height:40px;
+  line-height:40px;
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+}
+
+.tradeSend[disabled]{
+  opacity:.45;
+  cursor:not-allowed;
+  filter:saturate(.7);
+  box-shadow:none !important;
+}
+.tradeTargetHint_old{
+  margin-top:10px;
+  opacity:.8;
+  font-size:13px;
+}
+
+/* --- Trade: target status pill --- */
+.tradeTargetStatus{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  margin-top:10px;
+  padding:8px 10px;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,.10);
+  background: rgba(0,0,0,.18);
+  color: rgba(255,255,255,.86);
+}
+.tradeTargetStatus.empty{
+  border-color: rgba(255,255,255,.10);
+  color: rgba(255,255,255,.72);
+}
+.tradeTargetStatus b{
+  color: #fff;
+}
+
+
+/* --- Trade: nudge label up --- */
+.tradeLabel{
+  transform: translateY(-4px);
+}
+
+
+/* --- Trade: fancy buttons (less flat cyan) --- */
+.tradeTargetBtn,
+.tradeSend{
+  background:
+    radial-gradient(220px 90px at 30% 20%, rgba(255,255,255,.22), transparent 60%),
+    linear-gradient(135deg, rgba(0,207,255,.95), rgba(120,130,255,.75));
+  border: 1px solid rgba(255,255,255,.16);
+  color:#071018;
+  text-shadow: none;
+  box-shadow:
+    0 14px 30px rgba(0,207,255,.18),
+    0 10px 22px rgba(120,130,255,.12),
+    inset 0 1px 0 rgba(255,255,255,.28);
+}
+.tradeTargetBtn:hover,
+.tradeSend:hover{
+  filter: brightness(1.04) saturate(1.05);
+  box-shadow:
+    0 18px 40px rgba(0,207,255,.22),
+    0 12px 28px rgba(120,130,255,.16),
+    0 0 0 3px rgba(0,207,255,.10),
+    inset 0 1px 0 rgba(255,255,255,.30);
+}
+.tradeTargetBtn:active,
+.tradeSend:active{
+  transform: translateY(1px);
+  box-shadow:
+    0 10px 22px rgba(0,207,255,.16),
+    inset 0 1px 0 rgba(255,255,255,.22);
+}
+.tradeSend[disabled],
+.tradeTargetBtn[disabled]{
+  background: rgba(255,255,255,.10);
+  border-color: rgba(255,255,255,.12);
+  color: rgba(255,255,255,.55);
+  box-shadow: none !important;
+  filter:none;
+}
+
+
+/* --- Trade: buttons (whiter & elegant) --- */
+.tradeTargetBtn,
+.tradeSend{
+  color:#0b1220;
+  background:
+    radial-gradient(260px 90px at 30% 18%, rgba(255,255,255,.58), transparent 60%),
+    linear-gradient(135deg, rgba(245,250,255,.92), rgba(184,234,255,.55));
+  border: 1px solid rgba(255,255,255,.24);
+  box-shadow:
+    0 14px 32px rgba(0,0,0,.22),
+    0 10px 22px rgba(0,207,255,.10),
+    inset 0 1px 0 rgba(255,255,255,.55);
+}
+.tradeTargetBtn:hover,
+.tradeSend:hover{
+  filter: brightness(1.02) saturate(1.02);
+  box-shadow:
+    0 18px 42px rgba(0,0,0,.26),
+    0 12px 28px rgba(0,207,255,.12),
+    0 0 0 3px rgba(255,255,255,.06),
+    inset 0 1px 0 rgba(255,255,255,.62);
+}
+
+
+/* --- Finder: Trade button aligned with Close style, white variant --- */
+#tradeBtn{
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.18), rgba(220,232,244,.09)) !important;
+  border: 1px solid rgba(236,244,252,.42) !important;
+  color: rgba(252,254,255,.98) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.34),
+    inset 0 -1px 0 rgba(195,210,224,.10),
+    0 0 0 1px rgba(255,255,255,.04) !important;
+  height:34px !important;
+  padding:0 12px !important;
+  border-radius:10px !important;
+  line-height:34px !important;
+  font-weight:600 !important;
+  letter-spacing:.02em;
+}
+#tradeBtn:hover{
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.24), rgba(226,238,248,.12)) !important;
+  border-color: rgba(244,249,255,.52) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.42),
+    inset 0 -1px 0 rgba(204,218,232,.14),
+    0 0 0 1px rgba(255,255,255,.06) !important;
+}
+#tradeBtn:active{ transform: translateY(1px); }
+
+
+/* --- Finder: make Trade & Close identical size --- */
+#tradeBtn, #closeBtn{
+  box-sizing:border-box !important;
+  height:34px !important;
+  min-height:34px !important;
+  padding:0 12px !important;
+  border-radius:10px !important;
+  line-height:34px !important;
+  font-size:14px !important;
+}
+
+
+/* --- Font sharpness tweaks for NUI --- */
+#tradeBtn, #closeBtn{
+  -webkit-font-smoothing: antialiased;
+  text-rendering: geometricPrecision;
+  font-synthesis: none;
+  /* ensure fully-opaque text colors to avoid 'washed' look */
+}
+#tradeBtn{ color: rgba(245,250,255,.96) !important; }
+#closeBtn{ color:#ffffff !important; }
+
+#tradeBtn, #closeBtn{
+  transform: none !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+
+/* --- Finder buttons: slightly smaller text --- */
+#tradeBtn, #closeBtn{
+  font-size: 13px !important;
+  letter-spacing: .015em;
+}
+
+/* --- Nav: push Trade/Close to right --- */
+.nav{ width:100%; }
+.nav-spacer{ flex:1; }
+
+
+/* --- Trade: scrollbar styling (match Finder) --- */
+.tradeBody{
+  scrollbar-width: thin;                 /* Firefox */
+  scrollbar-color: rgba(255,255,255,.22) rgba(0,0,0,.12);
+}
+.tradeBody::-webkit-scrollbar{
+  width: 10px;
+}
+.tradeBody::-webkit-scrollbar-track{
+  background: rgba(0,0,0,.10);
+  border-radius: 999px;
+}
+.tradeBody::-webkit-scrollbar-thumb{
+  background: linear-gradient(180deg, rgba(255,255,255,.22), rgba(255,255,255,.12));
+  border: 1px solid rgba(255,255,255,.10);
+  border-radius: 999px;
+}
+.tradeBody::-webkit-scrollbar-thumb:hover{
+  background: linear-gradient(180deg, rgba(255,255,255,.28), rgba(255,255,255,.16));
+}
+
+/* --- Trade: display name instead of card_id --- */
+.tradeName{
+  font-weight:700;
+  letter-spacing:.01em;
+  color: rgba(255,255,255,.92);
+}
+
+/* --- Toast: sub line --- */
+.tc-toast .toast-sub{
+  display:block;
+  margin-top:4px;
+  font-size:12px;
+  opacity:.82;
+}
+
+/* --- Rarity badge colors --- */
+.badge-rarity{ color:#fff; }
+.badge-rarity.badge-r{
+  background: rgba(210,220,240,.14);
+  border-color: rgba(210,220,240,.30);
+  box-shadow: 0 0 14px rgba(210,220,240,.12);
+}
+.badge-rarity.badge-sr{
+  background: rgba(120,220,255,.16);
+  border-color: rgba(120,220,255,.35);
+  box-shadow: 0 0 14px rgba(120,220,255,.14);
+}
+.badge-rarity.badge-ssr{
+  background: rgba(255,190,90,.18);
+  border-color: rgba(255,190,90,.40);
+  box-shadow: 0 0 16px rgba(255,190,90,.16);
+}
+.badge-rarity.badge-ur{
+  background: rgba(190,120,255,.18);
+  border-color: rgba(190,120,255,.42);
+  box-shadow: 0 0 16px rgba(190,120,255,.18);
+}
+
+
+/* ===== Admin Tablet: match Finder glass theme ===== */
+#adminOverlay{
+  background: rgba(0,0,0,.62) !important;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.tablet{
+  width: min(920px, calc(100vw - 56px));
+  height: min(640px, calc(100vh - 110px));
+  background:
+    radial-gradient(1200px 520px at 18% 0%, rgba(0,207,255,.14), transparent 55%),
+    radial-gradient(900px 520px at 85% 110%, rgba(180,120,255,.10), transparent 60%),
+    linear-gradient(180deg, rgba(16,18,28,.94), rgba(10,12,18,.94)) !important;
+  border-radius: 20px !important;
+  border: 1px solid rgba(0,207,255,.28) !important;
+  box-shadow:
+    0 22px 70px rgba(0,0,0,.62),
+    inset 0 1px 0 rgba(255,255,255,.10) !important;
+  padding: 18px !important;
+  overflow:hidden;
+}
+
+.tablet .header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding-bottom:12px;
+  margin-bottom:12px;
+  border-bottom:1px solid rgba(255,255,255,.10);
+}
+
+.tablet .header h2{
+  margin:0;
+  font-size:18px;
+  font-weight:900;
+  letter-spacing:.04em;
+  text-shadow: 0 0 18px rgba(0,207,255,.18);
+}
+
+#adminClose{
+  background: rgba(255,255,255,.06) !important;
+  border: 1px solid rgba(255,255,255,.18) !important;
+  color:#fff !important;
+  border-radius: 12px !important;
+  height:34px !important;
+  width:42px !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.10);
+}
+#adminClose:hover{
+  border-color: rgba(0,207,255,.35) !important;
+  box-shadow: 0 0 0 3px rgba(0,207,255,.10), inset 0 1px 0 rgba(255,255,255,.10) !important;
+}
+
+.tabs{
+  margin-top: 6px !important;
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.tab{
+  background: rgba(255,255,255,.04) !important;
+  border: 1px solid rgba(255,255,255,.10) !important;
+  color:#fff !important;
+  border-radius: 999px !important;
+  padding: 6px 12px !important;
+  cursor:pointer;
+  font-weight:700;
+  letter-spacing:.01em;
+}
+.tab:hover{ border-color: rgba(0,207,255,.22) !important; }
+.tab.active{
+  background:
+    radial-gradient(260px 90px at 30% 18%, rgba(255,255,255,.58), transparent 60%),
+    linear-gradient(135deg, rgba(245,250,255,.92), rgba(184,234,255,.55)) !important;
+  color:#0b1220 !important;
+  border-color: rgba(255,255,255,.24) !important;
+  box-shadow:
+    0 14px 32px rgba(0,0,0,.22),
+    0 10px 22px rgba(0,207,255,.10),
+    inset 0 1px 0 rgba(255,255,255,.55) !important;
+}
+
+.content{
+  margin-top: 14px !important;
+  flex:1;
+  overflow:auto;
+  padding-right: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,.22) rgba(0,0,0,.12);
+}
+.content::-webkit-scrollbar{ width:10px; }
+.content::-webkit-scrollbar-track{ background: rgba(0,0,0,.10); border-radius:999px; }
+.content::-webkit-scrollbar-thumb{
+  background: linear-gradient(180deg, rgba(255,255,255,.22), rgba(255,255,255,.12));
+  border: 1px solid rgba(255,255,255,.10);
+  border-radius:999px;
+}
+
+/* form elements inside admin */
+.tablet input, .tablet select, .tablet textarea{
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.16);
+  background: rgba(0,0,0,.24);
+  color:#fff;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+}
+.tablet input:focus, .tablet select:focus, .tablet textarea:focus{
+  outline:none;
+  border-color: rgba(0,207,255,.55);
+  box-shadow: 0 0 0 3px rgba(0,207,255,.12), inset 0 1px 0 rgba(255,255,255,.06);
+}
+
+.tablet button.btn, .tablet .btn{
+  border-radius: 14px;
+}
+
+/* make primary admin buttons elegant */
+.tablet .btn:not(.subtle):not(.ghost){
+  color:#0b1220;
+  background:
+    radial-gradient(260px 90px at 30% 18%, rgba(255,255,255,.58), transparent 60%),
+    linear-gradient(135deg, rgba(245,250,255,.92), rgba(184,234,255,.55));
+  border: 1px solid rgba(255,255,255,.24);
+  box-shadow:
+    0 14px 32px rgba(0,0,0,.22),
+    0 10px 22px rgba(0,207,255,.10),
+    inset 0 1px 0 rgba(255,255,255,.55);
+}
+.tablet .btn:not(.subtle):not(.ghost):hover{
+  filter: brightness(1.02) saturate(1.02);
+  box-shadow:
+    0 18px 42px rgba(0,0,0,.26),
+    0 12px 28px rgba(0,207,255,.12),
+    0 0 0 3px rgba(255,255,255,.06),
+    inset 0 1px 0 rgba(255,255,255,.62);
+}
+
+/* subtle buttons stay glassy */
+.tablet .btn.subtle, .tablet .btn.ghost{
+  background: rgba(255,255,255,.06) !important;
+  border: 1px solid rgba(255,255,255,.18) !important;
+  color:#fff !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.10) !important;
+}
+
+
+/* ===== Admin Tablet (Material You / Android vibe) ===== */
+#adminOverlay{
+  background: rgba(0,0,0,.55) !important;
+  backdrop-filter: blur(10px) saturate(1.05);
+  -webkit-backdrop-filter: blur(10px) saturate(1.05);
+}
+
+/* M3-ish surface */
+.tablet{
+  width: min(920px, calc(100vw - 56px)) !important;
+  height: min(680px, calc(100vh - 100px)) !important;
+  border-radius: 24px !important;
+  border: 1px solid rgba(255,255,255,.10) !important;
+  background:
+    radial-gradient(900px 420px at 12% 0%, rgba(120,220,255,.12), transparent 58%),
+    radial-gradient(800px 420px at 88% 110%, rgba(190,120,255,.10), transparent 62%),
+    linear-gradient(180deg, rgba(18,19,24,.96), rgba(12,13,18,.96)) !important;
+  box-shadow:
+    0 28px 80px rgba(0,0,0,.58),
+    0 10px 26px rgba(0,0,0,.35) !important;
+  padding: 18px !important;
+}
+
+/* App bar */
+.tablet .header{
+  padding: 6px 6px 14px !important;
+  margin-bottom: 12px !important;
+  border-bottom: 1px solid rgba(255,255,255,.08) !important;
+}
+
+.tablet .header h2{
+  font-size: 16px !important;
+  font-weight: 800 !important;
+  letter-spacing: .06em;
+  opacity: .95;
+  text-shadow: none !important;
+}
+
+/* Icon button (close) */
+#adminClose{
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 14px !important;
+  background: rgba(255,255,255,.06) !important;
+  border: 1px solid rgba(255,255,255,.12) !important;
+  box-shadow: none !important;
+}
+#adminClose:hover{
+  background: rgba(255,255,255,.08) !important;
+  border-color: rgba(255,255,255,.16) !important;
+}
+
+/* Tabs: indicator style */
+.tabs{
+  gap: 8px !important;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  padding-bottom: 10px;
+  margin-top: 8px !important;
+}
+.tab{
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 12px !important;
+  padding: 8px 10px !important;
+  color: rgba(255,255,255,.82) !important;
+  font-weight: 700;
+  position: relative;
+}
+.tab:hover{
+  background: rgba(255,255,255,.06) !important;
+  color: rgba(255,255,255,.92) !important;
+}
+.tab.active{
+  background: rgba(120,220,255,.10) !important;
+  color: rgba(255,255,255,.96) !important;
+}
+.tab.active::after{
+  content: "";
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: -10px;
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(120,220,255,.85), rgba(190,120,255,.65));
+}
+
+/* Content surface */
+.content{
+  margin-top: 14px !important;
+  border-radius: 18px;
+  padding: 14px 14px 12px;
+  background: rgba(255,255,255,.03);
+  border: 1px solid rgba(255,255,255,.06);
+}
+
+/* Fields */
+.tablet input, .tablet select, .tablet textarea{
+  border-radius: 16px !important;
+  border: 1px solid rgba(255,255,255,.14) !important;
+  background: rgba(0,0,0,.22) !important;
+  box-shadow: none !important;
+  padding: 10px 12px;
+}
+.tablet input:focus, .tablet select:focus, .tablet textarea:focus{
+  outline: none !important;
+  border-color: rgba(120,220,255,.50) !important;
+  box-shadow: 0 0 0 3px rgba(120,220,255,.14) !important;
+}
+
+/* Buttons: Filled / Tonal / Outlined-ish */
+.tablet .btn:not(.subtle):not(.ghost){
+  height: 40px;
+  border-radius: 16px !important;
+  font-weight: 800;
+  letter-spacing: .02em;
+  color: rgba(10,12,18,.92) !important;
+  background: linear-gradient(135deg, rgba(245,250,255,.92), rgba(184,234,255,.55)) !important;
+  border: 1px solid rgba(255,255,255,.22) !important;
+  box-shadow: 0 14px 32px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.55) !important;
+}
+.tablet .btn:not(.subtle):not(.ghost):hover{
+  filter: brightness(1.02) saturate(1.02);
+  box-shadow: 0 18px 42px rgba(0,0,0,.26), 0 0 0 3px rgba(120,220,255,.10), inset 0 1px 0 rgba(255,255,255,.62) !important;
+}
+
+.tablet .btn.subtle, .tablet .btn.ghost{
+  height: 40px;
+  border-radius: 16px !important;
+  background: rgba(255,255,255,.06) !important;
+  border: 1px solid rgba(255,255,255,.14) !important;
+  color: rgba(255,255,255,.92) !important;
+  box-shadow: none !important;
+}
+.tablet .btn.subtle:hover, .tablet .btn.ghost:hover{
+  background: rgba(255,255,255,.08) !important;
+  border-color: rgba(255,255,255,.18) !important;
+}
+
+/* Scrollbar */
+.content{
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,.22) rgba(0,0,0,.10);
+}
+.content::-webkit-scrollbar{ width:10px; }
+.content::-webkit-scrollbar-track{ background: rgba(0,0,0,.10); border-radius:999px; }
+.content::-webkit-scrollbar-thumb{
+  background: linear-gradient(180deg, rgba(255,255,255,.22), rgba(255,255,255,.12));
+  border: 1px solid rgba(255,255,255,.10);
+  border-radius:999px;
+}
+
+
+/* ===== Admin Tablet (Material You / LIGHT + bezel) ===== */
+#adminOverlay{
+  background: rgba(0,0,0,.45) !important;
+  backdrop-filter: blur(10px) saturate(1.05);
+  -webkit-backdrop-filter: blur(10px) saturate(1.05);
+}
+
+/* Bezel frame: draw outside the surface */
+.tablet{
+  position: relative;
+  width: min(920px, calc(100vw - 56px)) !important;
+  height: min(700px, calc(100vh - 90px)) !important;
+  border-radius: 26px !important;
+  padding: 20px !important;
+  background:
+    radial-gradient(1000px 520px at 18% 0%, rgba(120,220,255,.22), transparent 60%),
+    radial-gradient(900px 520px at 90% 110%, rgba(190,120,255,.16), transparent 62%),
+    linear-gradient(180deg, rgba(253,254,255,.98), rgba(242,246,252,.98)) !important;
+  border: 1px solid rgba(15,18,24,.10) !important;
+  box-shadow:
+    0 30px 90px rgba(0,0,0,.45),
+    0 10px 28px rgba(0,0,0,.22),
+    inset 0 1px 0 rgba(255,255,255,.75) !important;
+  overflow: hidden;
+}
+
+/* Outer bezel */
+.tablet::before{
+  content:"";
+  position:absolute;
+  inset:-14px;                 /* bezel thickness */
+  border-radius: 36px;
+  background: linear-gradient(180deg, rgba(20,22,28,.92), rgba(10,12,16,.92));
+  border: 1px solid rgba(255,255,255,.08);
+  box-shadow:
+    0 22px 70px rgba(0,0,0,.55),
+    inset 0 1px 0 rgba(255,255,255,.10);
+  z-index:-1;
+}
+
+/* Camera dot / sensor */
+.tablet::after{
+  content:"";
+  position:absolute;
+  top:-6px;
+  left:50%;
+  transform: translateX(-50%);
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.18);
+  box-shadow:
+    0 0 0 3px rgba(0,0,0,.25),
+    inset 0 0 0 2px rgba(0,0,0,.35);
+  opacity:.9;
+}
+
+/* App bar */
+.tablet .header{
+  padding: 6px 6px 14px !important;
+  margin-bottom: 12px !important;
+  border-bottom: 1px solid rgba(15,18,24,.10) !important;
+}
+.tablet .header h2{
+  color: rgba(15,18,24,.92) !important;
+  font-size: 16px !important;
+  font-weight: 800 !important;
+  letter-spacing: .06em;
+}
+
+/* Close button (icon button) */
+#adminClose{
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 14px !important;
+  background: rgba(15,18,24,.06) !important;
+  border: 1px solid rgba(15,18,24,.14) !important;
+  color: rgba(15,18,24,.82) !important;
+  box-shadow: none !important;
+}
+#adminClose:hover{
+  background: rgba(15,18,24,.08) !important;
+  border-color: rgba(15,18,24,.18) !important;
+}
+
+/* Tabs (indicator) */
+.tabs{
+  gap: 8px !important;
+  border-bottom: 1px solid rgba(15,18,24,.10);
+  padding-bottom: 10px;
+  margin-top: 8px !important;
+}
+.tab{
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 12px !important;
+  padding: 8px 10px !important;
+  color: rgba(15,18,24,.70) !important;
+  font-weight: 750;
+  position: relative;
+}
+.tab:hover{
+  background: rgba(15,18,24,.06) !important;
+  color: rgba(15,18,24,.88) !important;
+}
+.tab.active{
+  background: rgba(120,220,255,.22) !important;
+  color: rgba(15,18,24,.92) !important;
+}
+.tab.active::after{
+  content: "";
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: -10px;
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(40,170,255,.90), rgba(160,110,255,.75));
+}
+
+/* Content surface */
+.content{
+  margin-top: 14px !important;
+  border-radius: 18px;
+  padding: 14px 14px 12px;
+  background: rgba(255,255,255,.72) !important;
+  border: 1px solid rgba(15,18,24,.10) !important;
+  color: rgba(15,18,24,.88);
+}
+
+/* Fields */
+.tablet input, .tablet select, .tablet textarea{
+  border-radius: 16px !important;
+  border: 1px solid rgba(15,18,24,.16) !important;
+  background: rgba(255,255,255,.88) !important;
+  color: rgba(15,18,24,.92) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.70) !important;
+  padding: 10px 12px;
+}
+.tablet input:focus, .tablet select:focus, .tablet textarea:focus{
+  outline: none !important;
+  border-color: rgba(40,170,255,.55) !important;
+  box-shadow: 0 0 0 3px rgba(40,170,255,.18) !important;
+}
+
+/* Buttons: light filled / tonal */
+.tablet .btn:not(.subtle):not(.ghost){
+  height: 40px;
+  border-radius: 16px !important;
+  font-weight: 800;
+  letter-spacing: .02em;
+  color: rgba(15,18,24,.92) !important;
+  background:
+    radial-gradient(260px 90px at 30% 18%, rgba(255,255,255,.70), transparent 60%),
+    linear-gradient(135deg, rgba(245,250,255,.98), rgba(184,234,255,.70)) !important;
+  border: 1px solid rgba(15,18,24,.10) !important;
+  box-shadow: 0 14px 32px rgba(0,0,0,.16), inset 0 1px 0 rgba(255,255,255,.75) !important;
+}
+.tablet .btn:not(.subtle):not(.ghost):hover{
+  filter: brightness(1.01) saturate(1.02);
+  box-shadow: 0 18px 42px rgba(0,0,0,.18), 0 0 0 3px rgba(40,170,255,.12), inset 0 1px 0 rgba(255,255,255,.78) !important;
+}
+
+.tablet .btn.subtle, .tablet .btn.ghost{
+  height: 40px;
+  border-radius: 16px !important;
+  background: rgba(15,18,24,.05) !important;
+  border: 1px solid rgba(15,18,24,.12) !important;
+  color: rgba(15,18,24,.86) !important;
+  box-shadow: none !important;
+}
+.tablet .btn.subtle:hover, .tablet .btn.ghost:hover{
+  background: rgba(15,18,24,.07) !important;
+  border-color: rgba(15,18,24,.16) !important;
+}
+
+/* Scrollbar (light) */
+.content{
+  scrollbar-width: thin;
+  scrollbar-color: rgba(15,18,24,.25) rgba(0,0,0,.06);
+}
+.content::-webkit-scrollbar{ width:10px; }
+.content::-webkit-scrollbar-track{ background: rgba(0,0,0,.06); border-radius:999px; }
+.content::-webkit-scrollbar-thumb{
+  background: linear-gradient(180deg, rgba(15,18,24,.18), rgba(15,18,24,.10));
+  border: 1px solid rgba(15,18,24,.10);
+  border-radius:999px;
+}
+
+
+/* --- AdminOverlay: no blur (user preference) --- */
+#adminOverlay{
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+
+/* --- Admin tablet bezel fix: use outer ring (not clipped by overflow) --- */
+.tablet{
+  /* draw bezel as an outer ring */
+  box-shadow:
+    0 0 0 14px rgba(20,22,28,.92),
+    0 30px 90px rgba(0,0,0,.45),
+    0 10px 28px rgba(0,0,0,.22),
+    inset 0 1px 0 rgba(255,255,255,.75) !important;
+}
+
+
+/* --- Admin tablet bezel tune: less rounding + thicker bezel --- */
+.tablet{
+  border-radius: 20px !important; /* was 26/24 */
+  box-shadow:
+    0 0 0 18px rgba(20,22,28,.92), /* bezel thickness increased */
+    0 30px 90px rgba(0,0,0,.45),
+    0 10px 28px rgba(0,0,0,.22),
+    inset 0 1px 0 rgba(255,255,255,.75) !important;
+}
+
+
+/* --- Admin tablet: narrower overall size --- */
+.tablet{
+  width: min(820px, calc(100vw - 72px)) !important;
+  height: min(640px, calc(100vh - 120px)) !important;
+}
+
+
+/* --- Admin: phone-sized Android device frame --- */
+.tablet{
+  width: min(430px, calc(100vw - 60px)) !important;
+  height: min(820px, calc(100vh - 60px)) !important;
+  border-radius: 28px !important; /* phone corners */
+  padding: 18px !important;
+}
+
+/* a bit thicker bezel for phone feel */
+.tablet{
+  box-shadow:
+    0 0 0 20px rgba(20,22,28,.92),
+    0 30px 90px rgba(0,0,0,.45),
+    0 10px 28px rgba(0,0,0,.22),
+    inset 0 1px 0 rgba(255,255,255,.75) !important;
+}
+
+/* Header tighter */
+.tablet .header{ padding-bottom:10px !important; margin-bottom:10px !important; }
+.tablet .header h2{ font-size:15px !important; }
+
+/* Tabs wrap nicely on small width */
+.tabs{ flex-wrap:wrap; }
+.tab{ padding:8px 9px !important; }
+
+/* Content paddings a bit tighter */
+.content{ padding:12px 12px 10px !important; border-radius:16px !important; }
+
+/* --- Admin list: trade-like rows --- */
+#cardList .adminTradeItem{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:12px;
+  border-radius:16px;
+  margin-bottom:12px;
+  background: rgba(255,255,255,.78);
+  border: 1px solid rgba(15,18,24,.10);
+  box-shadow: 0 10px 24px rgba(0,0,0,.10);
+}
+#cardList .adminTradeItem .tradeLeft{ align-items:center; }
+#cardList .adminTradeItem .tradeThumbWrap{
+  width:56px;height:72px;
+  border-radius:14px;
+  border:1px solid rgba(15,18,24,.10);
+  background: rgba(255,255,255,.90);
+}
+#cardList .adminTradeItem .tradeThumb{ object-fit:cover; }
+#cardList .adminTradeItem .tradeName{ color: rgba(15,18,24,.92); font-weight:800; }
+#cardList .adminTradeItem .tradeLine2{ color: rgba(15,18,24,.62); }
+#cardList .adminTradeItem .pill{
+  background: rgba(15,18,24,.06);
+  border: 1px solid rgba(15,18,24,.10);
+  color: rgba(15,18,24,.72);
+}
+#cardList .adminTradeItem .pill.off{
+  background: rgba(255,90,90,.12);
+  border-color: rgba(255,90,90,.20);
+  color: rgba(120,20,20,.85);
+}
+#cardList .adminTradeItem .adminToggleBtn{
+  min-width: 92px;
+  height: 40px;
+  border-radius: 16px;
+}
+
+/* --- Admin list tweaks (from base, safe) --- */
+#cardList .adminTradeItem .badge-rarity{
+  color: rgba(15,18,24,.90) !important;
+}
+#cardList .adminTradeItem .badge-rarity.badge-r{
+  background: rgba(15,18,24,.06);
+  border-color: rgba(15,18,24,.12);
+  box-shadow:none;
+}
+#cardList .adminTradeItem .badge-rarity.badge-sr{
+  background: rgba(40,170,255,.14);
+  border-color: rgba(40,170,255,.28);
+  box-shadow:none;
+}
+#cardList .adminTradeItem .badge-rarity.badge-ssr{
+  background: rgba(255,190,90,.22);
+  border-color: rgba(255,190,90,.40);
+  box-shadow:none;
+}
+#cardList .adminTradeItem .badge-rarity.badge-ur{
+  background: rgba(190,120,255,.20);
+  border-color: rgba(190,120,255,.38);
+  box-shadow:none;
+}
+
+/* smaller toggle button */
+#cardList .adminTradeItem .adminToggleBtn{
+  min-width: 74px;
+  height: 34px;
+  border-radius: 14px;
+  padding: 0 10px;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+
+/* --- Admin list: gray out inactive cards --- */
+#cardList .adminTradeItem.inactive{
+  opacity: .62;
+  filter: grayscale(.85) saturate(.75);
+}
+#cardList .adminTradeItem.inactive:hover{
+  opacity: .72;
+  filter: grayscale(.70) saturate(.85);
+}
+#cardList .adminTradeItem.inactive .tradeName{
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+  text-decoration-color: rgba(15,18,24,.28);
+}
+
+/* --- Admin list: hide empty meta line --- */
+#cardList .adminTradeItem .tradeLine2{
+  display:none;
+}
+
+/* --- Admin list: actions (edit + toggle) --- */
+#cardList .adminTradeItem .adminActions{
+  display:flex;
+  gap:8px;
+  align-items:center;
+}
+#cardList .adminTradeItem .adminEditBtn{
+  min-width: 60px;
+  height: 34px;
+  border-radius: 14px;
+  padding: 0 10px;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+
+/* --- Card Admin: less rounded corners --- */
+.tablet{
+  border-radius: 20px !important;  /* was 28 */
+  box-shadow:
+    0 0 0 20px rgba(20,22,28,.92),
+    0 30px 90px rgba(0,0,0,.45),
+    0 10px 28px rgba(0,0,0,.22),
+    inset 0 1px 0 rgba(255,255,255,.75) !important;
+}
+
+/* --- Admin list: stack edit above toggle --- */
+#cardList .adminTradeItem .adminActions{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  align-items:flex-end;
+}
+#cardList .adminTradeItem .adminEditBtn,
+#cardList .adminTradeItem .adminToggleBtn{
+  min-width: 72px;
+  height: 34px;
+  border-radius: 14px;
+  padding: 0 10px;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+/* Make edit button same style as previous toggle (elegant light) */
+#cardList .adminTradeItem .adminEditBtn{
+  color: rgba(15,18,24,.92) !important;
+  background: rgba(40,170,255,.14) !important;
+  border: 1px solid rgba(40,170,255,.28) !important;
+  box-shadow: none !important;
+}
+
+/* Make toggle button thin red when active (meaning currently ACTIVE -> show '無効' red) */
+#cardList .adminTradeItem .adminToggleBtn{
+  color: rgba(120,20,20,.88) !important;
+  background: rgba(255,90,90,.14) !important;
+  border: 1px solid rgba(255,90,90,.28) !important;
+  box-shadow: none !important;
+}
+#cardList .adminTradeItem.inactive .adminToggleBtn{
+  /* when currently inactive, action is '有効' -> use calm green-ish */
+  color: rgba(10,90,45,.88) !important;
+  background: rgba(80,220,140,.12) !important;
+  border: 1px solid rgba(80,220,140,.26) !important;
+}
+
+
+/* --- Admin list: slightly narrower action buttons --- */
+#cardList .adminTradeItem .adminEditBtn,
+#cardList .adminTradeItem .adminToggleBtn{
+  min-width: 60px;
+  padding: 0 8px;
+}
+
+
+/* --- Admin Add/Edit: fix "限定" checkbox label visibility --- */
+.tablet .checkRow{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin: 10px 0 6px;
+  color: rgba(15,18,24,.86) !important;
+  font-weight: 650;
+}
+.tablet .checkRow input[type="checkbox"]{
+  width: 18px;
+  height: 18px;
+  accent-color: rgba(40,170,255,.85);
+}
+
+
+/* --- Tear glow: force 2px downward shift --- */
+.tearGlow{
+  transform: translateY(2px) !important;
+}
+
+
+/* --- Tear glow: thinner (half vertical thickness) --- */
+.tearGlow{
+  /* keep the 2px downward shift */
+  transform: translateY(-15px) scaleY(0.5) !important;
+  transform-origin: center;
+  height: 22px !important; /* keep base height; scaleY controls visible thickness */
+}
+
+
+/* --- Tear glow: slight narrower width --- */
+.tearGlow{
+  left: 9px !important;
+  right: 9px !important;
 }

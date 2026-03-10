@@ -1,6 +1,6 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 
-local binderOpen, adminOpen, packOpen = false, false, false
+local binderOpen, adminOpen = false, false
 
 local function Nui(action, payload)
   payload = payload or {}
@@ -10,8 +10,7 @@ end
 
 local function ForceCloseUI()
   binderOpen = false
-  adminOpen  = false
-  packOpen   = false
+  adminOpen = false
   SetNuiFocus(false, false)
   SetNuiFocusKeepInput(false)
   Nui("forceClose")
@@ -47,6 +46,22 @@ RegisterNetEvent('QBCore:Client:OnPlayerUnload', function()
   ForceCloseUI()
 end)
 
+-- Watchdog: during character select / not logged in, keep our NUI forcibly closed.
+CreateThread(function()
+  while true do
+    Wait(1000)
+    local loggedIn = LocalPlayer and LocalPlayer.state and LocalPlayer.state.isLoggedIn
+    if not loggedIn then
+      -- If any other UI is on top, do not steal focus; just ensure ours is not.
+      SetNuiFocus(false, false)
+      SetNuiFocusKeepInput(false)
+      Nui("forceClose")
+      binderOpen = false
+      adminOpen = false
+    end
+  end
+end)
+
 -- Admin open
 RegisterNetEvent("cards:client:openAdmin", function()
   adminOpen = true
@@ -73,7 +88,7 @@ end)
 
 -- Pack opening (cardpack)
 RegisterNetEvent("cards:client:openPack", function(card)
-  packOpen = true
+  binderOpen = true
   SetNuiFocus(true, true)
   Nui("openPack", {card = card})
   TriggerServerEvent("cards:server:getAlbum")
@@ -93,8 +108,10 @@ end)
 -- NUI callbacks
 RegisterNUICallback("close", function(_, cb) ForceCloseUI(); cb("ok") end)
 RegisterNUICallback("adminAdd", function(data, cb) TriggerServerEvent("cards:server:adminAddCard", data); cb("ok") end)
+RegisterNUICallback("adminUpdate", function(data, cb) TriggerServerEvent("cards:server:adminUpdateCard", data); cb("ok") end)
 RegisterNUICallback("adminToggleActive", function(data, cb) TriggerServerEvent("cards:server:adminToggleActive", data.card_id); cb("ok") end)
 RegisterNUICallback("adminGivePack", function(data, cb) TriggerServerEvent("cards:server:adminGivePack", data.targetId, data.amount); cb("ok") end)
+RegisterNUICallback("adminGiveFinder", function(data, cb) TriggerServerEvent("cards:server:adminGiveFinder", data.targetId); cb("ok") end)
 RegisterNUICallback("sendCard", function(data, cb) TriggerServerEvent("cards:server:sendCard", data.targetId, data.cardId); cb("ok") end)
 RegisterNUICallback("clearNew", function(data, cb) TriggerServerEvent("cards:server:clearNew", data.cardId); cb("ok") end)
 
@@ -117,22 +134,22 @@ RegisterNUICallback("getNearbyPlayers", function(_, cb)
   cb(nearby)
 end)
 
-RegisterNetEvent('tradingcards:openBinder', function()
-  TriggerEvent('cards:client:openBinder')
-end)
-
-RegisterNetEvent('tradingcards:usePack', function()
-  -- サーバー側の「パック使用処理」を呼ぶのが理想
-  -- いまの実装が QBCore CreateUseableItem 前提なら、ここでサーバーイベントに寄せる
-  TriggerServerEvent('tradingcards:server:usePack')
-end)
-
 -- ESC close
 CreateThread(function()
   while true do
     Wait(0)
-    if (binderOpen or adminOpen or packOpen) and IsControlJustPressed(0, 322) then
+    if (binderOpen or adminOpen) and IsControlJustPressed(0, 322) then
       ForceCloseUI()
     end
   end
+end)
+
+
+-- UI Toast (shown inside NUI, visible above overlay)
+RegisterNetEvent('tradingcards:client:uiToast', function(message, kind)
+    SendNUIMessage({
+        action = 'toast',
+        message = message or '',
+        kind = kind or 'error'
+    })
 end)

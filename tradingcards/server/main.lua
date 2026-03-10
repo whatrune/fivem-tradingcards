@@ -1,4 +1,7 @@
 local QBCore = exports['qb-core']:GetCoreObject()
+RollCard = RollCard or function()
+  return nil
+end
 local RollCard -- forward declaration
 -- =========================================================
 -- TradingCards: ox_inventory_fork compatibility (USE exports/events)
@@ -33,12 +36,14 @@ local function UseCardPack(src)
         return
     end
 
-    local uid = tostring(math.random(100000, 999999)) .. tostring(os.time())
-
+    -- Aggregated ownership: one row per (citizenid, card_id)
+    -- On acquire: count++ and mark NEW
     MySQL.insert.await([[
-        INSERT INTO player_cards (citizenid, card_uid, card_id, is_new)
-        VALUES (?, ?, ?, 1)
-    ]], { Player.PlayerData.citizenid, uid, card.card_id })
+        INSERT INTO player_cards (citizenid, card_id, count, is_new)
+        VALUES (?, ?, 1, 1)
+        ON DUPLICATE KEY UPDATE
+          count = count + 1
+    ]], { Player.PlayerData.citizenid, card.card_id })
 
     TriggerClientEvent("cards:client:openPack", src, card)
 end
@@ -90,19 +95,21 @@ local function EnsureSchema()
 
   MySQL.query([[
     CREATE TABLE IF NOT EXISTS player_cards (
-      id INT AUTO_INCREMENT PRIMARY KEY,
-      citizenid VARCHAR(50),
-      card_uid VARCHAR(100),
-      card_id VARCHAR(50),
-      is_new BOOLEAN DEFAULT TRUE,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      citizenid VARCHAR(50) NOT NULL,
+      card_id VARCHAR(50) NOT NULL,
+      count INT NOT NULL DEFAULT 0,
+      is_new TINYINT(1) NOT NULL DEFAULT 0,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      PRIMARY KEY (citizenid, card_id),
+      INDEX idx_citizenid (citizenid),
+      INDEX idx_card_id (card_id)
     )
   ]])
 end
 
 MySQL.ready(function()
   EnsureSchema()
-  print("^2[TradingCards] Schema checked/created.^0")
 end)
 
 RollCard = function()
@@ -145,10 +152,9 @@ RegisterNetEvent("cards:server:getAlbum", function()
 
   local allCards = MySQL.query.await("SELECT * FROM card_master ORDER BY page ASC, slot ASC")
   local owned = MySQL.query.await([[
-    SELECT card_id, COUNT(*) AS count, MAX(is_new) AS is_new
+    SELECT card_id, count, is_new
     FROM player_cards
     WHERE citizenid = ?
-    GROUP BY card_id
   ]], { Player.PlayerData.citizenid })
 
   TriggerClientEvent("cards:client:albumData", src, allCards, owned)
@@ -168,32 +174,54 @@ RegisterNetEvent("cards:server:sendCard", function(targetId, cardId)
   local src = source
   local Player = QBCore.Functions.GetPlayer(src)
   local Target = QBCore.Functions.GetPlayer(tonumber(targetId))
-  if not Player or not Target then return end
+  if not Player then return end
+  if not Target then
+    TriggerClientEvent('tradingcards:client:uiToast', src, '指定したIDのプレイヤーがオフラインです', 'error')
+    return
+  end
 
-  local already = MySQL.scalar.await([[
-    SELECT COUNT(*) FROM player_cards WHERE citizenid = ? AND card_id = ?
-  ]], { Target.PlayerData.citizenid, cardId }) or 0
-
-  local row = MySQL.single.await([[
-    SELECT card_uid FROM player_cards
-    WHERE citizenid = ? AND card_id = ?
-    ORDER BY created_at ASC
-    LIMIT 1
+  local sender = MySQL.single.await([[ 
+    SELECT count FROM player_cards WHERE citizenid = ? AND card_id = ?
   ]], { Player.PlayerData.citizenid, cardId })
 
-  if not row then
+  if not sender or (tonumber(sender.count) or 0) <= 0 then
     TriggerClientEvent("QBCore:Notify", src, "そのカードを持っていません", "error")
     return
   end
 
-  local updated = MySQL.update.await([[
-    UPDATE player_cards
-    SET citizenid = ?, is_new = 1
-    WHERE card_uid = ? AND citizenid = ?
-  ]], { Target.PlayerData.citizenid, row.card_uid, Player.PlayerData.citizenid })
+  local receiver = MySQL.single.await([[ 
+    SELECT count FROM player_cards WHERE citizenid = ? AND card_id = ?
+  ]], { Target.PlayerData.citizenid, cardId })
+  local already = (receiver and (tonumber(receiver.count) or 0) > 0) and 1 or 0
 
-  if updated and updated > 0 then
-    TriggerClientEvent("QBCore:Notify", src, "送信しました", "success")
+  -- Remove 1 from sender
+  local dec = MySQL.update.await([[ 
+    UPDATE player_cards
+    SET count = count - 1
+    WHERE citizenid = ? AND card_id = ? AND count > 0
+  ]], { Player.PlayerData.citizenid, cardId })
+
+  if not dec or dec <= 0 then
+    TriggerClientEvent('tradingcards:client:uiToast', src, '送信に失敗しました', 'error')
+    return
+  end
+
+  -- Clean up sender row if count hits 0
+  MySQL.update.await([[ 
+    DELETE FROM player_cards
+    WHERE citizenid = ? AND card_id = ? AND count <= 0
+  ]], { Player.PlayerData.citizenid, cardId })
+
+  -- Add 1 to receiver and mark NEW
+  MySQL.insert.await([[ 
+    INSERT INTO player_cards (citizenid, card_id, count, is_new)
+    VALUES (?, ?, 1, 1)
+    ON DUPLICATE KEY UPDATE
+      count = count + 1
+  ]], { Target.PlayerData.citizenid, cardId })
+
+  do
+    TriggerClientEvent('tradingcards:client:uiToast', src, '送信しました', 'success')
     TriggerClientEvent("cards:client:cardReceived", tonumber(targetId), cardId, (already == 0))
   end
 end)
@@ -210,6 +238,34 @@ end)
 RegisterNetEvent("cards:server:adminGetCards", function()
   local src = source
   if not IsCardAdmin(src) then return end
+  local cards = MySQL.query.await("SELECT * FROM card_master ORDER BY page ASC, slot ASC")
+  TriggerClientEvent("cards:client:adminCards", src, cards)
+end)
+
+
+RegisterNetEvent("cards:server:adminUpdateCard", function(data)
+  local src = source
+  if not IsCardAdmin(src) then return end
+  if type(data) ~= "table" then return end
+  if not data.card_id or data.card_id == "" then
+    TriggerClientEvent('tradingcards:client:uiToast', src, 'card_id が不正です', 'error')
+    return
+  end
+
+  -- only update editable fields (card_id itself is the key)
+  MySQL.update.await([[
+    UPDATE card_master
+    SET label = ?, rarity = ?, weight = ?, image_url = ?, is_limited = ?, start_date = ?, end_date = ?
+    WHERE card_id = ?
+  ]], {
+    data.label, data.rarity, data.weight, data.image_url,
+    (data.is_limited and 1 or 0),
+    (data.start_date ~= "" and data.start_date or nil),
+    (data.end_date ~= "" and data.end_date or nil),
+    data.card_id
+  })
+
+  TriggerClientEvent('tradingcards:client:uiToast', src, 'カードを更新しました', 'success')
   local cards = MySQL.query.await("SELECT * FROM card_master ORDER BY page ASC, slot ASC")
   TriggerClientEvent("cards:client:adminCards", src, cards)
 end)
@@ -242,13 +298,44 @@ end)
 
 RegisterNetEvent("cards:server:adminToggleActive", function(cardId)
   local src = source
-  if not IsCardAdmin(src) then return end
-  local row = MySQL.single.await("SELECT is_active FROM card_master WHERE card_id = ?", {cardId})
-  if not row then return end
-  local newState = (row.is_active == 1) and 0 or 1
-  MySQL.update.await("UPDATE card_master SET is_active = ? WHERE card_id = ?", {newState, cardId})
-  TriggerClientEvent("cards:client:adminRefresh", src)
+  if not IsCardAdmin(src) then
+    TriggerClientEvent('tradingcards:client:uiToast', src, '権限がありません', 'error')
+    return
+  end
+  cardId = tostring(cardId or ''):gsub('^%s+', ''):gsub('%s+$', '')
+  if cardId == '' then
+    TriggerClientEvent('tradingcards:client:uiToast', src, 'card_id が不正です', 'error')
+    return
+  end
+
+  -- Atomic toggle (reliable)
+  local changed = MySQL.update.await(
+    "UPDATE card_master SET is_active = CASE WHEN is_active = 1 THEN 0 ELSE 1 END WHERE card_id = ?",
+    {cardId}
+  ) or 0
+
+  if changed < 1 then
+    TriggerClientEvent('tradingcards:client:uiToast', src, '更新できませんでした（対象が見つからない / DBエラー）', 'error')
+    return
+  end
+
+  -- Read final state for accurate toast (fallback to generic if nil)
+  local curVal = MySQL.scalar.await("SELECT is_active FROM card_master WHERE card_id = ?", {cardId})
+  local cur = tonumber(curVal)
+  if cur == 1 then
+    TriggerClientEvent('tradingcards:client:uiToast', src, 'カードを有効化しました', 'success')
+  elseif cur == 0 then
+    TriggerClientEvent('tradingcards:client:uiToast', src, 'カードを無効化しました', 'success')
+  else
+    TriggerClientEvent('tradingcards:client:uiToast', src, '状態を更新しました', 'success')
+  end
+
+  local cards = MySQL.query.await("SELECT * FROM card_master ORDER BY page ASC, slot ASC")
+  TriggerClientEvent("cards:client:adminCards", src, cards)
 end)
+
+
+
 
 RegisterNetEvent("cards:server:adminGivePack", function(targetId, amount)
   local src = source
@@ -258,8 +345,16 @@ RegisterNetEvent("cards:server:adminGivePack", function(targetId, amount)
   Target.Functions.AddItem(Config.Items.CardPack, math.max(1, tonumber(amount) or 1))
 end)
 
+
+RegisterNetEvent("cards:server:adminGiveFinder", function(targetId)
+  local src = source
+  if not IsCardAdmin(src) then return end
+  local Target = QBCore.Functions.GetPlayer(tonumber(targetId))
+  if not Target then return end
+  Target.Functions.AddItem(Config.Items.CardFinder, 1)
+end)
+
 RegisterNetEvent('tradingcards:server:usePack', function()
   local src = source
-  print(('[tradingcards] server:usePack from %s'):format(src))
   UseCardPack(src)
 end)

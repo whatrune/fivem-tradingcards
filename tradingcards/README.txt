@@ -5,3 +5,8 @@ QB Trading Cards ULTIMATE v3.2 (CHAR SELECT BLACK SCREEN HARD FIX)
 - Watchdog: LocalPlayer.state.isLoggedIn が false の間、毎秒 ForceCloseUI を送る（キャラ選択中に絶対閉じる）
 
 まずこれで直るはず。もしまだ黒いなら「他リソースがDoScreenFadeOutしたまま」か「別NUIが上に黒幕」。
+
+
+Hover sound:
+- Place your hover sound at html/sounds/hover.mp3
+- The finder cards will play it on mouseenter with a short cooldown to avoid spam.
