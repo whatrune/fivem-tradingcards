@@ -120,7 +120,7 @@ add_principal identifier.license:xxxxxxxxxxxxxxxxxxxxxxxxxxxx group.admin
 
 ## 6. 画像の配置
 
-インベントリ画像は、リソース内で参照しているパスに置く必要があります。  
+インベントリ画像（inv_items配下）は、リソース内で参照しているパスに置く必要があります。  
 ox_inventoryの場合、このディレクトリ構成が多いです。
 
 ```text
