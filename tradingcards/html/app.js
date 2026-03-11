@@ -117,7 +117,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 });
 
 let state={currentPage:1,allCards:[],allCardsSorted:null,cardIndex:{},ownedMap:{},newMap:{},pendingCard:null,selectedTarget:null,mode:'album',pendingRewards:[],overlayOpen:false,_pendingRewardNeedsAlbum:false,rarityFilter:'ALL',collectionScope:'ALL'};
-let adminState={ tab:'list', cards:[], listScroll:0 };
+let adminState={ tab:'list', cards:[], listScroll:0, rarityWeights:{R:9548,SR:400,SSR:50,UR:2}, editingId:null, deletePendingId:null, deleteSubmitting:false };
 function postNui(endpoint,data={}){return fetch(`https://${GetParentResourceName()}/${endpoint}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}).catch(()=>null);}
 
 function setOverlayRarity(r){
@@ -133,7 +133,8 @@ function setOverlayRarity(r){
 
 function endPackFlow(){ try{ postNui('close'); }catch(_){} try{ closeOverlay(); }catch(_){} }
 function playSound(id,vol=0.6){const e=document.getElementById(id); if(!e) return; try{e.pause();e.currentTime=0;e.volume=vol;const p=e.play(); if(p&&p.catch)p.catch(()=>{});}catch(_){}}
-function playClonedSound(id,vol=0.6){const base=document.getElementById(id); if(!base) return; try{const s=base.cloneNode(true); s.volume=vol; s.currentTime=0; const p=s.play(); if(p&&p.catch)p.catch(()=>{}); s.addEventListener('ended',()=>{try{s.remove();}catch(_){}} ,{once:true});}catch(_){}}
+function playClonedSound(id,vol=0.6){const base=document.getElementById(id); if(!base) return; try{const s=base.cloneNode(true); s.volume=vol; s.currentTime=0; s.preload='auto'; s.style.display='none'; document.body.appendChild(s); const p=s.play(); if(p&&p.catch)p.catch((err)=>{console.warn('[sound] play failed:', id, err); try{s.remove();}catch(_){}}); s.addEventListener('ended',()=>{try{s.remove();}catch(_){}} ,{once:true});}catch(err){console.warn('[sound] clone failed:', id, err);}}
+['sound_r','sound_sr','sound_ssr','sound_ur','sound_open','sound_page','sound_hover'].forEach((id)=>{const e=document.getElementById(id); if(!e) return; try{e.load();}catch(_){}});
 let lastCardHoverSoundAt = 0;
 function playCardHoverSound(){
   const now = Date.now();
@@ -167,6 +168,13 @@ if(!window.__tcEscBound){
   window.__tcEscBound = true;
   document.addEventListener('keydown', (e)=>{
     if(e.key !== 'Escape') return;
+
+    // close delete confirm modal if open
+    const delModal = document.getElementById('deleteConfirmModal');
+    if(delModal && !delModal.classList.contains('hidden')){
+      try{ adminCloseDeleteModal(); }catch(_){ }
+      return;
+    }
 
     // close reward popup if open
     const rw = document.getElementById('rewardEffect');
@@ -331,7 +339,7 @@ function launchCardRotateSwap(card, done){
   const playRarityAfterSpin = ()=>{
     if(raritySoundPlayed) return;
     raritySoundPlayed = true;
-    try{ playSound('sound_'+((card && card.rarity) || 'R').toLowerCase(), 0.65); }catch(_){}
+    try{ playClonedSound('sound_'+((card && card.rarity) || 'R').toLowerCase(), 0.65); }catch(_){}
   };
   const armEnd = ()=>{
     playRarityAfterSpin();
@@ -916,12 +924,55 @@ window.addEventListener('message', (ev)=>{
     // stay on current tab; list updates in background
     return;
   }
+  if(d.action === 'adminRarityWeights'){
+    adminApplyRarityWeights(d.weights || {});
+    return;
+  }
 });
 
 
 
 
 // ===== ADMIN (bind handlers) =====
+
+
+function adminCollectRarityWeights(){
+  const get = (id)=> Math.max(0, Math.floor(Number(document.getElementById(id)?.value || 0)));
+  return {
+    R: get('rarityWeightR'),
+    SR: get('rarityWeightSR'),
+    SSR: get('rarityWeightSSR'),
+    UR: get('rarityWeightUR')
+  };
+}
+
+function adminUpdateRarityPercentages(){
+  const weights = adminCollectRarityWeights();
+  const total = Object.values(weights).reduce((a,b)=>a + (Number(b)||0), 0);
+  const fmt = (v)=> total > 0 ? `${((v/total)*100).toFixed(2)}%` : '0%';
+  const set = (id,val)=>{ const el=document.getElementById(id); if(el) el.textContent = `約 ${fmt(val)}`; };
+  set('rarityPctR', weights.R);
+  set('rarityPctSR', weights.SR);
+  set('rarityPctSSR', weights.SSR);
+  set('rarityPctUR', weights.UR);
+  const totalEl = document.getElementById('rarityWeightTotal');
+  if(totalEl) totalEl.textContent = String(total);
+}
+
+function adminApplyRarityWeights(weights){
+  adminState.rarityWeights = {
+    R: Math.max(0, Math.floor(Number(weights.R ?? weights.r ?? adminState.rarityWeights?.R ?? 0))),
+    SR: Math.max(0, Math.floor(Number(weights.SR ?? weights.sr ?? adminState.rarityWeights?.SR ?? 0))),
+    SSR: Math.max(0, Math.floor(Number(weights.SSR ?? weights.ssr ?? adminState.rarityWeights?.SSR ?? 0))),
+    UR: Math.max(0, Math.floor(Number(weights.UR ?? weights.ur ?? adminState.rarityWeights?.UR ?? 0)))
+  };
+  const set = (id,val)=>{ const el=document.getElementById(id); if(el) el.value = String(val); };
+  set('rarityWeightR', adminState.rarityWeights.R);
+  set('rarityWeightSR', adminState.rarityWeights.SR);
+  set('rarityWeightSSR', adminState.rarityWeights.SSR);
+  set('rarityWeightUR', adminState.rarityWeights.UR);
+  adminUpdateRarityPercentages();
+}
 
 function adminNextCardId(rarity){
   const prefix = String(rarity||'R').toLowerCase();
@@ -1017,6 +1068,13 @@ function adminResetForm(){
   const lim = document.getElementById('is_limited'); if(lim) lim.checked=false;
   const sd = document.getElementById('start_date'); if(sd) sd.value='';
   const ed = document.getElementById('end_date'); if(ed) ed.value='';
+  adminState.editingId = null;
+  adminState.deletePendingId = null;
+  adminState.deleteSubmitting = false;
+  const title = document.getElementById('formTitle'); if(title) title.textContent='新規カード追加';
+  const preview = document.getElementById('cardIdPreview'); if(preview) preview.textContent='';
+  try{ adminUpdateDeleteButton(); }catch(_){ }
+  try{ adminCloseDeleteModal(); }catch(_){ }
   try{ adminSyncCardId(); }catch(_){}
 }function adminOpen(){
   const ov = document.getElementById('adminOverlay');
@@ -1042,8 +1100,10 @@ function adminSetTab(tab){
   if(t) t.classList.add('active');
   if(tab==='list') document.getElementById('adminList')?.classList.add('active');
   if(tab==='add') document.getElementById('adminAdd')?.classList.add('active');
-  if(tab==='add') { try{ adminSyncCardId(); }catch(_){} }
+  if(tab==='add') { try{ adminSyncCardId(); }catch(_){} try{ adminUpdateDeleteButton(); }catch(_){} }
+  else { try{ adminCloseDeleteModal(); }catch(_){} }
   if(tab==='give') document.getElementById('adminGive')?.classList.add('active');
+  if(tab==='rates') document.getElementById('adminRates')?.classList.add('active');
 }
 
 
@@ -1099,8 +1159,47 @@ setVal('start_date', normDt(card.start_date));
     adminState.editingId = String(card.card_id || '');
     const preview = document.getElementById('cardIdPreview');
     if(preview) preview.textContent = `card_id: ${card.card_id}`;
+    try{ adminUpdateDeleteButton(); }catch(_){ }
 
   }catch(e){}
+}
+
+function adminUpdateDeleteButton(){
+  const btn = document.getElementById('deleteCardBtn');
+  if(!btn) return;
+  const editing = !!adminState.editingId;
+  btn.classList.toggle('hidden', !editing);
+  btn.disabled = !editing || adminState.deleteSubmitting;
+}
+
+function adminOpenDeleteModal(){
+  if(!adminState.editingId || adminState.deleteSubmitting) return;
+  adminState.deletePendingId = String(adminState.editingId);
+  const modal = document.getElementById('deleteConfirmModal');
+  const target = document.getElementById('deleteTargetCardId');
+  if(target) target.textContent = `card_id: ${adminState.deletePendingId}`;
+  if(modal) modal.classList.remove('hidden');
+}
+
+function adminCloseDeleteModal(){
+  adminState.deletePendingId = null;
+  const modal = document.getElementById('deleteConfirmModal');
+  if(modal) modal.classList.add('hidden');
+}
+
+function adminConfirmDelete(){
+  const cardId = String(adminState.deletePendingId || adminState.editingId || '');
+  if(!cardId || adminState.deleteSubmitting) return;
+  adminState.deleteSubmitting = true;
+  const btn = document.getElementById('deleteConfirmBtn');
+  if(btn){ btn.disabled = true; btn.textContent = '削除中...'; }
+  postNui('adminDelete', {card_id: cardId}).finally(()=>{
+    adminState.deleteSubmitting = false;
+    if(btn){ btn.disabled = false; btn.textContent = '削除する'; }
+    try{ adminUpdateDeleteButton(); }catch(_){ }
+  });
+  adminCloseDeleteModal();
+  try{ adminResetForm(); }catch(_){ }
 }
 
 function adminRenderList(cards){
@@ -1156,6 +1255,10 @@ document.addEventListener('DOMContentLoaded', ()=>{
   });
   // reset
   document.getElementById('resetFormBtn')?.addEventListener('click', adminResetForm);
+  document.getElementById('deleteCardBtn')?.addEventListener('click', adminOpenDeleteModal);
+  document.getElementById('deleteCancelBtn')?.addEventListener('click', adminCloseDeleteModal);
+  document.getElementById('deleteConfirmBtn')?.addEventListener('click', adminConfirmDelete);
+  document.querySelector('#deleteConfirmModal .confirmModalBackdrop')?.addEventListener('click', adminCloseDeleteModal);
   // auto card_id
   document.getElementById('rarity')?.addEventListener('change', adminSyncCardId);
   try{ adminSyncCardId(); }catch(_){}
@@ -1181,6 +1284,17 @@ document.addEventListener('DOMContentLoaded', ()=>{
     if(!targetId) return tcShowToast('送り先IDを入力してください。', "error");
     postNui('adminGiveFinder', {targetId});
   });
+  ['rarityWeightR','rarityWeightSR','rarityWeightSSR','rarityWeightUR'].forEach(id=>{
+    document.getElementById(id)?.addEventListener('input', adminUpdateRarityPercentages);
+  });
+  document.getElementById('saveRarityWeightsBtn')?.addEventListener('click', ()=>{
+    const data = adminCollectRarityWeights();
+    const total = Object.values(data).reduce((a,b)=>a + (Number(b)||0), 0);
+    if(total <= 0) return tcShowToast('排出率の合計は 1 以上にしてください', 'error');
+    postNui('adminSaveRarityWeights', data);
+  });
+  adminApplyRarityWeights(adminState.rarityWeights || {});
+  try{ adminUpdateDeleteButton(); }catch(_){ }
 });
 
 

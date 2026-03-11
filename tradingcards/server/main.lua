@@ -76,6 +76,42 @@ local function NowSQL()
   return os.date('%Y-%m-%d %H:%M:%S')
 end
 
+local DEFAULT_RARITY_WEIGHTS = {
+  R = 9548,
+  SR = 400,
+  SSR = 50,
+  UR = 2
+}
+
+local function NormalizeRarityKey(v)
+  local key = string.upper(tostring(v or 'R'))
+  if key ~= 'R' and key ~= 'SR' and key ~= 'SSR' and key ~= 'UR' then return 'R' end
+  return key
+end
+
+local function GetRarityWeights()
+  local rows = MySQL.query.await("SELECT rarity, weight FROM card_rarity_weights") or {}
+  local out = {}
+  for rarity, weight in pairs(DEFAULT_RARITY_WEIGHTS) do
+    out[rarity] = tonumber(weight) or 0
+  end
+  for _, row in ipairs(rows) do
+    local rarity = NormalizeRarityKey(row.rarity)
+    out[rarity] = math.max(0, tonumber(row.weight) or 0)
+  end
+  return out
+end
+
+local function SeedRarityWeights()
+  for rarity, weight in pairs(DEFAULT_RARITY_WEIGHTS) do
+    MySQL.insert.await([[
+      INSERT INTO card_rarity_weights (rarity, weight)
+      VALUES (?, ?)
+      ON DUPLICATE KEY UPDATE weight = weight
+    ]], { rarity, tonumber(weight) or 0 })
+  end
+end
+
 local function EnsureSchema()
   MySQL.query([[
     CREATE TABLE IF NOT EXISTS card_master (
@@ -106,10 +142,18 @@ local function EnsureSchema()
       INDEX idx_card_id (card_id)
     )
   ]])
+
+  MySQL.query([[
+    CREATE TABLE IF NOT EXISTS card_rarity_weights (
+      rarity VARCHAR(10) PRIMARY KEY,
+      weight INT NOT NULL DEFAULT 0
+    )
+  ]])
 end
 
 MySQL.ready(function()
   EnsureSchema()
+  SeedRarityWeights()
 end)
 
 RollCard = function()
@@ -124,17 +168,54 @@ RollCard = function()
   ]], {now, now})
 
   if not cards or #cards == 0 then return nil end
-  local total = 0
-  for _, c in pairs(cards) do total = total + (tonumber(c.weight) or 0) end
-  if total <= 0 then return nil end
 
-  local r = math.random(1, total)
-  local sum = 0
-  for _, c in pairs(cards) do
-    sum = sum + (tonumber(c.weight) or 0)
-    if r <= sum then return c end
+  local buckets = { R = {}, SR = {}, SSR = {}, UR = {} }
+  for _, card in ipairs(cards) do
+    local rarity = NormalizeRarityKey(card.rarity)
+    table.insert(buckets[rarity], card)
   end
-  return cards[#cards]
+
+  local rarityWeights = GetRarityWeights()
+  local totalRarityWeight = 0
+  local availableRarities = {}
+  for rarity, list in pairs(buckets) do
+    if #list > 0 then
+      local weight = math.max(0, tonumber(rarityWeights[rarity]) or 0)
+      if weight > 0 then
+        totalRarityWeight = totalRarityWeight + weight
+        table.insert(availableRarities, { rarity = rarity, weight = weight, cards = list })
+      end
+    end
+  end
+
+  if totalRarityWeight <= 0 then return nil end
+
+  local rarityRoll = math.random(1, totalRarityWeight)
+  local raritySum = 0
+  local chosenBucket = nil
+  for _, entry in ipairs(availableRarities) do
+    raritySum = raritySum + entry.weight
+    if rarityRoll <= raritySum then
+      chosenBucket = entry
+      break
+    end
+  end
+  if not chosenBucket then chosenBucket = availableRarities[#availableRarities] end
+  if not chosenBucket or not chosenBucket.cards or #chosenBucket.cards == 0 then return nil end
+
+  local totalCardWeight = 0
+  for _, card in ipairs(chosenBucket.cards) do
+    totalCardWeight = totalCardWeight + math.max(0, tonumber(card.weight) or 0)
+  end
+  if totalCardWeight <= 0 then return chosenBucket.cards[1] end
+
+  local cardRoll = math.random(1, totalCardWeight)
+  local cardSum = 0
+  for _, card in ipairs(chosenBucket.cards) do
+    cardSum = cardSum + math.max(0, tonumber(card.weight) or 0)
+    if cardRoll <= cardSum then return card end
+  end
+  return chosenBucket.cards[#chosenBucket.cards]
 end
 
 QBCore.Functions.CreateUseableItem(Config.Items.CardPack, function(source)
@@ -242,6 +323,41 @@ RegisterNetEvent("cards:server:adminGetCards", function()
   TriggerClientEvent("cards:client:adminCards", src, cards)
 end)
 
+RegisterNetEvent("cards:server:adminGetRarityWeights", function()
+  local src = source
+  if not IsCardAdmin(src) then return end
+  TriggerClientEvent("cards:client:adminRarityWeights", src, GetRarityWeights())
+end)
+
+RegisterNetEvent("cards:server:adminSaveRarityWeights", function(data)
+  local src = source
+  if not IsCardAdmin(src) then return end
+  if type(data) ~= 'table' then return end
+
+  local updates = {}
+  for rarity, _ in pairs(DEFAULT_RARITY_WEIGHTS) do
+    local value = math.floor(math.max(0, tonumber(data[rarity]) or tonumber(data[string.lower(rarity)]) or 0))
+    updates[rarity] = value
+  end
+
+  local total = 0
+  for _, weight in pairs(updates) do total = total + weight end
+  if total <= 0 then
+    TriggerClientEvent('tradingcards:client:uiToast', src, '排出率の合計は 1 以上にしてください', 'error')
+    return
+  end
+
+  for rarity, weight in pairs(updates) do
+    MySQL.insert.await([[
+      INSERT INTO card_rarity_weights (rarity, weight)
+      VALUES (?, ?)
+      ON DUPLICATE KEY UPDATE weight = VALUES(weight)
+    ]], { rarity, weight })
+  end
+
+  TriggerClientEvent('tradingcards:client:uiToast', src, '排出率を保存しました', 'success')
+  TriggerClientEvent("cards:client:adminRarityWeights", src, GetRarityWeights())
+end)
 
 RegisterNetEvent("cards:server:adminUpdateCard", function(data)
   local src = source
@@ -293,7 +409,40 @@ RegisterNetEvent("cards:server:adminAddCard", function(data)
     (data.end_date and data.end_date ~= "" and data.end_date) or nil
   })
 
-  TriggerClientEvent("cards:client:adminRefresh", src)
+  TriggerClientEvent('tradingcards:client:uiToast', src, 'カードを登録しました', 'success')
+  local cards = MySQL.query.await("SELECT * FROM card_master ORDER BY page ASC, slot ASC")
+  TriggerClientEvent("cards:client:adminCards", src, cards)
+  TriggerClientEvent("cards:client:adminRarityWeights", src, GetRarityWeights())
+end)
+
+RegisterNetEvent("cards:server:adminDeleteCard", function(cardId)
+  local src = source
+  if not IsCardAdmin(src) then
+    TriggerClientEvent('tradingcards:client:uiToast', src, '権限がありません', 'error')
+    return
+  end
+  cardId = tostring(cardId or ''):gsub('^%s+', ''):gsub('%s+$', '')
+  if cardId == '' then
+    TriggerClientEvent('tradingcards:client:uiToast', src, 'card_id が不正です', 'error')
+    return
+  end
+
+  local exists = MySQL.scalar.await("SELECT COUNT(*) FROM card_master WHERE card_id = ?", {cardId}) or 0
+  if exists <= 0 then
+    TriggerClientEvent('tradingcards:client:uiToast', src, '削除対象のカードが見つかりません', 'error')
+    return
+  end
+
+  MySQL.update.await("DELETE FROM player_cards WHERE card_id = ?", {cardId})
+  local deleted = MySQL.update.await("DELETE FROM card_master WHERE card_id = ?", {cardId}) or 0
+  if deleted <= 0 then
+    TriggerClientEvent('tradingcards:client:uiToast', src, 'カードを削除できませんでした', 'error')
+    return
+  end
+
+  TriggerClientEvent('tradingcards:client:uiToast', src, 'カードを削除しました', 'success')
+  local cards = MySQL.query.await("SELECT * FROM card_master ORDER BY page ASC, slot ASC")
+  TriggerClientEvent("cards:client:adminCards", src, cards)
 end)
 
 RegisterNetEvent("cards:server:adminToggleActive", function(cardId)
@@ -340,18 +489,41 @@ end)
 RegisterNetEvent("cards:server:adminGivePack", function(targetId, amount)
   local src = source
   if not IsCardAdmin(src) then return end
-  local Target = QBCore.Functions.GetPlayer(tonumber(targetId))
-  if not Target then return end
-  Target.Functions.AddItem(Config.Items.CardPack, math.max(1, tonumber(amount) or 1))
+  local targetNum = tonumber(targetId)
+  local giveAmount = math.max(1, tonumber(amount) or 1)
+  local Target = QBCore.Functions.GetPlayer(targetNum)
+  if not Target then
+    TriggerClientEvent('tradingcards:client:uiToast', src, '指定したプレイヤーが見つかりません', 'error')
+    return
+  end
+
+  local ok = Target.Functions.AddItem(Config.Items.CardPack, giveAmount)
+  if ok == false then
+    TriggerClientEvent('tradingcards:client:uiToast', src, 'カードパックの配布に失敗しました', 'error')
+    return
+  end
+
+  TriggerClientEvent('tradingcards:client:uiToast', src, ('カードパックを %s 個配布しました'):format(giveAmount), 'success')
 end)
 
 
 RegisterNetEvent("cards:server:adminGiveFinder", function(targetId)
   local src = source
   if not IsCardAdmin(src) then return end
-  local Target = QBCore.Functions.GetPlayer(tonumber(targetId))
-  if not Target then return end
-  Target.Functions.AddItem(Config.Items.CardFinder, 1)
+  local targetNum = tonumber(targetId)
+  local Target = QBCore.Functions.GetPlayer(targetNum)
+  if not Target then
+    TriggerClientEvent('tradingcards:client:uiToast', src, '指定したプレイヤーが見つかりません', 'error')
+    return
+  end
+
+  local ok = Target.Functions.AddItem(Config.Items.CardFinder, 1)
+  if ok == false then
+    TriggerClientEvent('tradingcards:client:uiToast', src, 'カードファインダーの配布に失敗しました', 'error')
+    return
+  end
+
+  TriggerClientEvent('tradingcards:client:uiToast', src, 'カードファインダーを配布しました', 'success')
 end)
 
 RegisterNetEvent('tradingcards:server:usePack', function()

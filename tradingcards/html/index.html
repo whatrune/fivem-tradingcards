@@ -1,12 +1,12 @@
 <!DOCTYPE html><html lang="ja"><head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Trading Cards</title><link rel="stylesheet" href="style.css" /></head><body>
-<audio id="sound_r" src="sounds/r.mp3"></audio>
-<audio id="sound_sr" src="sounds/sr.mp3"></audio>
-<audio id="sound_ssr" src="sounds/ssr.mp3"></audio>
-<audio id="sound_ur" src="sounds/ur.mp3"></audio>
-<audio id="sound_open" src="sounds/open.mp3"></audio>
-<audio id="sound_page" src="sounds/page.mp3"></audio>
+<audio id="sound_r" src="sounds/r.mp3" preload="auto"></audio>
+<audio id="sound_sr" src="sounds/sr.mp3" preload="auto"></audio>
+<audio id="sound_ssr" src="sounds/ssr.mp3" preload="auto"></audio>
+<audio id="sound_ur" src="sounds/ur.mp3" preload="auto"></audio>
+<audio id="sound_open" src="sounds/open.mp3" preload="auto"></audio>
+<audio id="sound_page" src="sounds/page.mp3" preload="auto"></audio>
 <audio id="sound_hover" src="sounds/hover.mp3" preload="auto"></audio>
 
 <div id="overlay" class="hidden">
@@ -71,6 +71,7 @@
       <button class="tab active" data-tab="list">一覧</button>
       <button class="tab" data-tab="add">追加/編集</button>
       <button class="tab" data-tab="give">配布</button>
+      <button class="tab" data-tab="rates">排出率</button>
     </div>
     <div class="content">
       <div id="adminList" class="tabContent active"><div id="cardList"></div></div>
@@ -88,7 +89,7 @@
         <label class="checkRow"><input type="checkbox" id="is_limited"> 限定</label>
         <label class="small">開始（任意）</label><input id="start_date" type="datetime-local">
         <label class="small">終了（任意）</label><input id="end_date" type="datetime-local">
-        <div class="row"><button id="saveCardBtn" class="btn">保存</button><button id="resetFormBtn" class="btn subtle">リセット</button></div>
+        <div class="row adminFormActions"><button id="saveCardBtn" class="btn">保存</button><button id="resetFormBtn" class="btn subtle">リセット</button><button id="deleteCardBtn" class="btn danger hidden">物理削除</button></div>
       </div>
       <div id="adminGive" class="tabContent">
         <input id="targetId" placeholder="プレイヤーID">
@@ -96,6 +97,33 @@
         <button id="givePackBtn" class="btn">パック配布</button>
         <button id="giveFinderBtn" class="btn subtle">カードファインダー配布</button>
       </div>
+      <div id="adminRates" class="tabContent">
+        <div class="rateGrid">
+          <label class="rateCard rate-r"><span class="rateLabel">R</span><input id="rarityWeightR" type="number" min="0" step="1" placeholder="weight"><span id="rarityPctR" class="ratePct">約 0%</span></label>
+          <label class="rateCard rate-sr"><span class="rateLabel">SR</span><input id="rarityWeightSR" type="number" min="0" step="1" placeholder="weight"><span id="rarityPctSR" class="ratePct">約 0%</span></label>
+          <label class="rateCard rate-ssr"><span class="rateLabel">SSR</span><input id="rarityWeightSSR" type="number" min="0" step="1" placeholder="weight"><span id="rarityPctSSR" class="ratePct">約 0%</span></label>
+          <label class="rateCard rate-ur"><span class="rateLabel">UR</span><input id="rarityWeightUR" type="number" min="0" step="1" placeholder="weight"><span id="rarityPctUR" class="ratePct">約 0%</span></label>
+        </div>
+        <div class="rateSummary">合計 weight: <span id="rarityWeightTotal">0</span></div>
+        <div class="row"><button id="saveRarityWeightsBtn" class="btn">保存</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<div id="deleteConfirmModal" class="confirmModal hidden" aria-hidden="true">
+  <div class="confirmModalBackdrop"></div>
+  <div class="confirmModalCard">
+    <div class="confirmModalTitle">カードを物理削除します</div>
+    <div class="confirmModalBody">
+      <p>この操作は元に戻せません。</p>
+      <p>カード本体に加えて、プレイヤーの所持データも削除されます。</p>
+      <div id="deleteTargetCardId" class="confirmTarget mono"></div>
+    </div>
+    <div class="confirmModalActions">
+      <button id="deleteCancelBtn" class="btn subtle">キャンセル</button>
+      <button id="deleteConfirmBtn" class="btn danger">削除する</button>
     </div>
   </div>
 </div>

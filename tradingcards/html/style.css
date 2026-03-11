@@ -287,11 +287,11 @@ input,select{width:100%;padding:9px 10px;border-radius:10px;background:#141826;b
 #cardLaunch{
   width:220px;
   height:320px;
-  border-radius:18px;
-  overflow:hidden;
-  box-shadow:0 18px 55px rgba(0,0,0,.55);
-  border:1px solid rgba(255,255,255,.12);
-  background:rgba(20,20,20,.92);
+  border-radius:0;
+  overflow:visible;
+  box-shadow:none;
+  border:none;
+  background:transparent;
   transform:translateY(70px) scale(.86) rotateY(0deg);
   opacity:0;
   position:relative;
@@ -302,7 +302,8 @@ input,select{width:100%;padding:9px 10px;border-radius:10px;background:#141826;b
   inset:0;
   width:100%;
   height:100%;
-  object-fit:cover;
+  object-fit:contain;
+  object-position:center center;
   display:block;
 }
 #cardLaunch .imgFront{ opacity:0; }
@@ -2737,3 +2738,31 @@ input,select{width:100%;padding:9px 10px;border-radius:10px;background:#141826;b
   left: 9px !important;
   right: 9px !important;
 }
+
+
+/* rarity weights admin */
+#adminRates{padding-top:6px}
+.rateGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:8px}
+.rateCard{display:flex;flex-direction:column;gap:8px;padding:14px;border-radius:14px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12)}
+.rateLabel{font-size:18px;font-weight:800;letter-spacing:.06em}
+.ratePct{font-size:13px;opacity:.8}
+.rateSummary{margin-top:12px;opacity:.85;font-size:14px}
+.rate-r{box-shadow:inset 0 0 0 1px rgba(255,255,255,.04)}
+.rate-sr{box-shadow:inset 0 0 0 1px rgba(103,204,255,.16)}
+.rate-ssr{box-shadow:inset 0 0 0 1px rgba(208,146,255,.18)}
+.rate-ur{box-shadow:inset 0 0 0 1px rgba(255,96,96,.2)}
+
+
+.btn.danger{background:linear-gradient(180deg,#ff6b6b,#d93c3c);color:#fff;border:1px solid rgba(255,255,255,.14)}
+.btn.danger:hover{filter:brightness(1.05)}
+.adminFormActions{align-items:center;flex-wrap:wrap}
+.adminFormActions #deleteCardBtn{margin-left:auto}
+.confirmModal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:400;background:rgba(0,0,0,.25)}
+.confirmModal:not(.hidden){display:flex}
+.confirmModalBackdrop{position:absolute;inset:0;background:rgba(0,0,0,.62);backdrop-filter:blur(2px)}
+.confirmModalCard{position:relative;width:min(460px,calc(100vw - 48px));background:linear-gradient(180deg,rgba(20,24,38,.98),rgba(11,15,24,.98));border:1px solid rgba(255,255,255,.14);border-radius:18px;box-shadow:0 22px 60px rgba(0,0,0,.5);padding:20px;z-index:1}
+.confirmModalTitle{font-size:20px;font-weight:900;margin-bottom:10px;color:#fff}
+.confirmModalBody{color:rgba(255,255,255,.9);line-height:1.7}
+.confirmModalBody p{margin:0 0 8px}
+.confirmTarget{margin-top:12px;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);word-break:break-all}
+.confirmModalActions{display:flex;justify-content:flex-end;gap:10px;margin-top:16px}
