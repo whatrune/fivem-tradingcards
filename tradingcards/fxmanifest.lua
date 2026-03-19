@@ -1,4 +1,4 @@
-fx_version '3.2.2'
+fx_version 'cerulean'
 game 'gta5'
 
 author 'Trading Cards ULTIMATE'
